@@ -153,13 +153,13 @@ def main(flags) -> None:
             logger.info("Using stock model")
 
         model.eval()
-        model = torch.jit.trace(
-            model,
-            jit_inputs,
-            check_trace=False,
-            strict=False
-        )
-        model = torch.jit.freeze(model)
+        # model = torch.jit.trace(
+        #     model,
+        #     jit_inputs,
+        #     check_trace=False,
+        #     strict=False
+        # )
+        # model = torch.jit.freeze(model)
 
     def predict(
         batch

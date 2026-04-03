@@ -79,7 +79,7 @@ def main(flags):
 
     # Load the C BERT sequence classifier
     model = AutoModelForSequenceClassification.from_pretrained(
-        "emilyalsentzer/Bio_ClinicalBERT",
+        flags.bert_model,
         num_labels=41
     )
 
