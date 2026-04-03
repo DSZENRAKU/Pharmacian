@@ -33,6 +33,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Profile Persistence Logic
+    const profileFields = {
+        age: document.getElementById('p-age'),
+        gender: document.getElementById('p-gender'),
+        weight: document.getElementById('p-weight'),
+        h_hyper: document.getElementById('h-hyper'),
+        h_diabe: document.getElementById('h-diabe'),
+        h_asthma: document.getElementById('h-asthma'),
+        h_allergy: document.getElementById('h-allergy')
+    };
+
+    function saveProfile() {
+        const profile = {};
+        for(let key in profileFields) {
+            profile[key] = profileFields[key].type === 'checkbox' ? profileFields[key].checked : profileFields[key].value;
+        }
+        localStorage.setItem('pharmacian_profile', JSON.stringify(profile));
+    }
+
+    function loadProfile() {
+        const saved = JSON.parse(localStorage.getItem('pharmacian_profile'));
+        if (saved) {
+            for(let key in profileFields) {
+                if (profileFields[key].type === 'checkbox') profileFields[key].checked = saved[key];
+                else profileFields[key].value = saved[key];
+            }
+        }
+    }
+    loadProfile();
+    Object.values(profileFields).forEach(f => f.addEventListener('change', saveProfile));
+
     async function handlePredict(isUpload = false) {
         resultsSection.classList.add('hidden');
         loader.classList.remove('hidden');
@@ -41,58 +72,69 @@ document.addEventListener('DOMContentLoaded', () => {
         let options = { method: 'POST' };
 
         if (isUpload) {
-            if (fileInput.files.length === 0) {
-                alert("Please attach an image first.");
-                loader.classList.add('hidden');
-                return;
-            }
-            loaderText.innerText = "Running Web Visual Scan...";
+            if (fileInput.files.length === 0) { alert("Attach image first."); loader.classList.add('hidden'); return; }
+            loaderText.innerText = "Initiating Clinical Visual Scan...";
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             url = '/upload';
             options.body = formData;
         } else {
             const symptoms = textarea.value.trim();
-            if(!symptoms) { alert("Please describe symptoms."); loader.classList.add('hidden'); return; }
-            loaderText.innerText = "Analyzing Supervised Matrix...";
+            const duration = durationSlider.value;
+            if(!symptoms) { alert("Describe symptoms."); loader.classList.add('hidden'); return; }
+            loaderText.innerText = "Consulting Hybrid Clinical Matrix...";
+            
+            // Gather Profile Data
+            const profile = {
+                age: profileFields.age.value,
+                gender: profileFields.gender.value,
+                weight: profileFields.weight.value,
+                h_hyper: profileFields.h_hyper.checked ? 1 : 0,
+                h_diabe: profileFields.h_diabe.checked ? 1 : 0,
+                h_asthma: profileFields.h_asthma.checked ? 1 : 0,
+                h_allergy: profileFields.h_allergy.checked ? 1 : 0
+            };
+
             options.headers = { 'Content-Type': 'application/json' };
-            options.body = JSON.stringify({ symptoms });
+            options.body = JSON.stringify({ symptoms, duration, ...profile });
         }
+
 
         try {
             const res = await fetch(url, options);
             const data = await res.json();
-            
-            if (!res.ok) throw new Error(data.error || "Server processing failed");
+            if (!res.ok) throw new Error(data.error || "Server failed");
 
-            // Extract based on endpoint differences
             const prediction = isUpload ? data : data.predictions[0];
 
             document.getElementById('result-disease').innerText = prediction.disease;
             document.getElementById('result-precautions').innerText = prediction.precautions;
             
-            // Show reasoning logic
+            // Advanced Insights Display
             const reasoningBox = document.getElementById('ai-reasoning');
             const reasoningText = document.getElementById('reasoning-text');
             if (prediction.reasoning) {
                 reasoningBox.classList.remove('hidden');
                 reasoningText.innerText = prediction.reasoning;
-            } else {
-                reasoningBox.classList.add('hidden');
-            }
-            
-            // Show RL feedback elements fresh
-            document.getElementById('rl-yes').disabled = false;
-            document.getElementById('rl-no').disabled = false;
-            document.getElementById('rl-status').classList.add('hidden');
+            } else { reasoningBox.classList.add('hidden'); }
+
+            const intelligenceBox = document.getElementById('global-intelligence');
+            const intelligenceText = document.getElementById('intelligence-text');
+            if (prediction.intelligence_note) {
+                intelligenceBox.classList.remove('hidden');
+                intelligenceText.innerText = prediction.intelligence_note;
+            } else { intelligenceBox.classList.add('hidden'); }
+
+            const learningBox = document.getElementById('autonomous-learning');
+            const learningText = document.getElementById('learning-text');
+            if (prediction.learning_note) {
+                learningBox.classList.remove('hidden');
+                learningText.innerText = prediction.learning_note;
+            } else { learningBox.classList.add('hidden'); }
 
             loader.classList.add('hidden');
             resultsSection.classList.remove('hidden');
-
-        } catch(e) {
-            alert(e.message);
-            loader.classList.add('hidden');
-        }
+        } catch(e) { alert(e.message); loader.classList.add('hidden'); }
     }
 
     predictBtn.addEventListener('click', () => handlePredict(false));

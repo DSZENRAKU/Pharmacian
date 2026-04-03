@@ -18,17 +18,61 @@
             <p>Your Virtual Clinical Pharmacist. Describe your symptoms or upload a medical scan for instant >90% accurate guidance.</p>
         </header>
 
+        <!-- Patient Profile Identity Layer -->
+        <section class="profile-card glass-panel" style="margin-bottom: 20px;">
+            <div class="profile-header">
+                <h3>👤 Patient Profile <span class="badge">Hybrid Persistence</span></h3>
+            </div>
+            <div class="profile-grid">
+                <div class="field-group">
+                    <label>Age</label>
+                    <input type="number" id="p-age" placeholder="Age" min="1" max="110" value="25">
+                </div>
+                <div class="field-group">
+                    <label>Gender</label>
+                    <select id="p-gender">
+                        <option value="0">Male</option>
+                        <option value="1">Female</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label>Weight (kg)</label>
+                    <input type="number" id="p-weight" placeholder="kg" min="10" max="250" value="70">
+                </div>
+            </div>
+            <div class="history-grid" style="margin-top: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-size: 0.85em; opacity: 0.8;">Clinical History:</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="h-hyper"> Hypertension</label>
+                    <label><input type="checkbox" id="h-diabe"> Diabetes</label>
+                    <label><input type="checkbox" id="h-asthma"> Asthma</label>
+                    <label><input type="checkbox" id="h-allergy"> Allergies</label>
+                </div>
+            </div>
+        </section>
+
         <main class="app-card glass-panel">
             <div class="tabs">
                 <button class="tab-btn active" id="tab-text">📝 Symptoms</button>
                 <button class="tab-btn" id="tab-upload">📸 Visual Scan</button>
             </div>
 
-            <!-- Text Input Mode -->
+            <!-- Text Input Mode (Physician Level) -->
             <div class="input-section" id="mode-text">
-                <label for="symptoms">How are you feeling today?</label>
-                <textarea id="symptoms" placeholder="e.g., I've had a severe headache, sensitivity to light, and itchy skin eruptions over the last few days..."></textarea>
-                <button id="predict-btn" class="primary-btn">Analyze Symptoms <span class="sparkle">✨</span></button>
+                <div class="field-group">
+                    <label for="symptoms">How are you feeling? (Be detailed like a physician's intake)</label>
+                    <textarea id="symptoms" placeholder="e.g., Severe pressure in my lower back, sharp pain in my chest when I breathe, and a slight fever..."></textarea>
+                </div>
+                
+                <div class="field-group" style="margin-top: 15px;">
+                    <label for="duration">How many days have you been suffering from these symptoms?</label>
+                    <div class="duration-control">
+                        <input type="range" id="duration" min="1" max="30" value="1" step="1">
+                        <span id="duration-val" class="accent">1 Day</span>
+                    </div>
+                </div>
+
+                <button id="predict-btn" class="primary-btn" style="margin-top: 20px;">Start Clinical Consultation <span class="sparkle">✨</span></button>
             </div>
 
             <!-- Image Upload Mode -->
@@ -59,7 +103,15 @@
                 </div>
 
                 <div id="ai-reasoning" class="reasoning-box hidden">
-                    <p><strong>🧠 AI Reasoning:</strong> <span id="reasoning-text"></span></p>
+                    <p><strong>🧠 Clinical Research Findings:</strong> <span id="reasoning-text"></span></p>
+                </div>
+
+                <div id="global-intelligence" class="intelligence-box hidden">
+                    <p><strong>🌐 Global Intelligence Note:</strong> <span id="intelligence-text"></span></p>
+                </div>
+
+                <div id="autonomous-learning" class="learning-box hidden" style="background: rgba(40, 167, 69, 0.1); border: 1px solid rgba(40, 167, 69, 0.3); border-radius: 12px; padding: 12px 15px; margin: 15px 0; font-size: 0.9em; color: #d4edda;">
+                    <p><strong>🧠 Clinical Learning:</strong> <span id="learning-text"></span></p>
                 </div>
 
                 <div class="precautions-card">
@@ -84,6 +136,10 @@
                     <div class="map-container">
                         <iframe width="100%" height="250" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://www.openstreetmap.org/export/embed.html?bbox=77.2612%2C19.1245%2C77.3486%2C19.1824&amp;layer=mapnik&amp;marker=19.1550%2C77.3050"></iframe>
                     </div>
+                </div>
+                <!-- Clinical Disclaimer -->
+                <div class="clinical-disclaimer" style="margin-top: 25px; font-size: 0.75em; opacity: 0.6; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 3px solid var(--accent);">
+                    <strong>⚠️ Clinical Pharmacist Disclaimer:</strong> This virtual consultation is based on algorithmic feature matching. It is intended for clinical screening and guidance only. <strong>Always consult a licensed physician or visit a hospital for confirmed medical diagnosis and prescription.</strong>
                 </div>
             </div>
         </main>
