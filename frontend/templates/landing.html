@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacian | Clinical Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/titlebar.css">
+    <style>
+        /* Landing page specifics overriding style.css defaults where needed */
+        
+        body {
+            background-color: var(--clr-bg);
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(2, 132, 199, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(250, 204, 21, 0.06) 0%, transparent 50%);
+            color: var(--clr-text-hi);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+
+
+        /* Subtle floating particle canvas */
+        canvas#particles {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Main layout — Two-column */
+        .login-wrapper {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            width: 900px;
+            max-width: calc(100vw - 40px);
+            background: var(--clr-surface);
+            border-radius: 28px;
+            box-shadow: var(--shadow-hi);
+            border: 1px solid var(--clr-border);
+            overflow: hidden;
+            animation: slideUpFade 0.8s ease-out;
+        }
+
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Left branding panel */
+        .brand-panel {
+            flex: 1;
+            background: linear-gradient(145deg, #0f172a 0%, #1e3a5f 100%);
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-panel::before {
+            content: '';
+            position: absolute;
+            top: -80px; right: -80px;
+            width: 280px; height: 280px;
+            background: radial-gradient(circle, rgba(2, 132, 199, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .brand-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -60px; left: -60px;
+            width: 220px; height: 220px;
+            background: radial-gradient(circle, rgba(250, 204, 21, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .brand-logo-area {
+            position: relative; z-index: 2;
+        }
+
+        .brand-logo-area img {
+            height: 56px;
+            margin-bottom: 24px;
+            filter: brightness(0) invert(1);
+            opacity: 0.95;
+        }
+
+        .brand-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 2rem;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            line-height: 1.1;
+            margin-bottom: 12px;
+        }
+
+        .brand-title span { color: #facc15; }
+
+        .brand-desc {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.55);
+            line-height: 1.6;
+            max-width: 240px;
+        }
+
+        .brand-features {
+            position: relative; z-index: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: rgba(255,255,255,0.75);
+            font-size: 0.85rem;
+        }
+
+        .feature-icon {
+            width: 34px; height: 34px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #facc15;
+            flex-shrink: 0;
+        }
+
+        /* Right login panel */
+        .auth-panel {
+            width: 380px;
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .auth-header {
+            margin-bottom: 36px;
+        }
+
+        .auth-header h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--clr-text-hi);
+            margin-bottom: 6px;
+        }
+
+        .auth-header p {
+            font-size: 0.88rem;
+            color: var(--clr-text-mid);
+        }
+
+        /* Form fields */
+        .field {
+            margin-bottom: 18px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--clr-text-mid);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-wrap i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--clr-text-lo);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        input {
+            width: 100%;
+            -webkit-user-select: text !important;
+            user-select: text !important;
+            background: var(--clr-input-bg);
+            border: 1.5px solid var(--clr-border);
+            border-radius: 12px;
+            padding: 14px 16px 14px 44px;
+            color: var(--clr-text-hi);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        input::placeholder {
+            color: var(--clr-text-lo);
+        }
+
+        input:focus {
+            border-color: var(--clr-accent);
+            background: var(--clr-surface);
+            box-shadow: 0 0 0 3px var(--clr-accent-glow);
+        }
+
+        input:focus ~ i, .input-wrap:focus-within i {
+            color: var(--clr-accent);
+        }
+
+        /* Remember + Forgot */
+        .field-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            font-size: 0.82rem;
+        }
+
+        .remember { display: flex; align-items: center; gap: 8px; color: var(--text-mid); }
+        .remember input[type=checkbox] { width: auto; accent-color: var(--accent); }
+        .forgot { color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: none; }
+        .forgot:hover { text-decoration: underline; }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 0.88rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: var(--clr-accent);
+            color: #ffffff;
+            box-shadow: 0 4px 12px var(--clr-accent-glow);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--clr-accent-glow);
+        }
+
+        .btn-secondary {
+            background: var(--clr-card-hover);
+            color: var(--clr-text-mid);
+            border: 1.5px solid var(--clr-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--clr-border);
+            color: var(--clr-text-hi);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            font-size: 0.78rem;
+            color: var(--clr-text-lo);
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--clr-border);
+        }
+
+        /* Footer note */
+        .auth-footer {
+            margin-top: 28px;
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--text-lo);
+            line-height: 1.5;
+        }
+
+        .auth-footer strong { color: var(--accent); font-weight: 600; }
+
+        /* Absolute footer */
+        footer.page-footer {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.72rem;
+            color: var(--text-lo);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            z-index: 10;
+        }
+    </style>
+    <script src="/static/titlebar.js"></script>
+</head>
+<body>
+
+    <canvas id="particles"></canvas>
+
+    <div class="login-wrapper">
+
+        <!-- Left: Branding Panel -->
+        <div class="brand-panel">
+            <div class="brand-logo-area">
+                <img src="/static/logo.png" alt="Pharmacian Logo" style="height:56px; width:auto; object-fit:contain; filter: brightness(0) invert(1); opacity:0.95;">
+                <div class="brand-title">PHARMA<span>CIAN</span></div>
+                <p class="brand-desc">A clinical-grade disease risk assessment platform for healthcare professionals.</p>
+            </div>
+
+            <div class="brand-features">
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-shield-heart"></i></div>
+                    <span>Multi-disease risk assessment from clinical history</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                    <span>Explainable prediction results with probability scores</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon"><i class="fas fa-user-doctor"></i></div>
+                    <span>Patient record management & follow-up scheduling</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Auth Panel -->
+        <div class="auth-panel">
+            <div class="auth-header">
+                <h2>Clinician Sign In</h2>
+                <p>Enter your staff credentials to access the platform.</p>
+            </div>
+
+            <div id="auth-error" style="display: none; background: var(--clr-danger-dim); color: var(--clr-danger); padding: 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; margin-bottom: 20px; text-align: center; border: 1px solid var(--clr-danger);">
+                <i class="fas fa-exclamation-circle"></i> <span id="error-text"></span>
+            </div>
+
+            <div class="field">
+                <label>Staff ID / Username</label>
+                <div class="input-wrap">
+                    <input type="text" id="username" placeholder="e.g. DR-2024-0042" spellcheck="false" autocomplete="off">
+                    <i class="fas fa-user-doctor"></i>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Access PIN</label>
+                <div class="input-wrap">
+                    <input type="password" id="password" placeholder="Enter your PIN" autocomplete="current-password">
+                    <i class="fas fa-lock"></i>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <label class="remember">
+                    <input type="checkbox"> Keep me signed in
+                </label>
+                <a class="forgot">Forgot PIN?</a>
+            </div>
+
+            <button class="btn btn-primary" onclick="proceed()">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </button>
+
+            <div class="divider">or</div>
+
+            <button class="btn btn-secondary" onclick="continueAsGuest()">
+                <i class="fas fa-user-clock"></i> Continue as Guest
+            </button>
+
+            <div class="auth-footer">
+                By accessing the platform you agree to our<br>
+                <strong>Clinical Data Use Policy</strong> and <strong>Privacy Guidelines</strong>.
+            </div>
+        </div>
+    </div>
+
+    <footer class="page-footer">
+        Pharmacian Clinical Platform &mdash; v2.0 &nbsp;|&nbsp; For Authorised Healthcare Use Only
+    </footer>
+
+    <script>
+        /* Subtle dot particle background */
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        let dots = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Dot {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.4;
+                this.vy = (Math.random() - 0.5) * 0.4;
+                this.r = Math.random() * 1.5 + 0.5;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(2, 132, 199, 0.35)';
+                ctx.fill();
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+        }
+
+        function init() {
+            dots = [];
+            for (let i = 0; i < 50; i++) dots.push(new Dot());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            dots.forEach((d, i) => {
+                d.update();
+                d.draw();
+                for (let j = i + 1; j < dots.length; j++) {
+                    const dx = d.x - dots[j].x;
+                    const dy = d.y - dots[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(2, 132, 199, ${0.15 - dist / 1200})`;
+                        ctx.lineWidth = 0.6;
+                        ctx.moveTo(d.x, d.y);
+                        ctx.lineTo(dots[j].x, dots[j].y);
+                        ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(animate);
+        }
+
+        init();
+        animate();
+
+        function showError(msg) {
+            const errDiv = document.getElementById('auth-error');
+            const errText = document.getElementById('error-text');
+            errText.innerText = msg;
+            errDiv.style.display = 'block';
+            setTimeout(() => { errDiv.style.display = 'none'; }, 5000);
+        }
+
+        function getAuth() {
+            if (!window.pharmacianAuth) {
+                showError("Desktop authentication service unavailable. Please launch the Electron app.");
+                return null;
+            }
+            return window.pharmacianAuth;
+        }
+
+        function setAuthEnabled(enabled) {
+            const btns = document.querySelectorAll(".btn");
+            btns.forEach(b => {
+                b.disabled = !enabled;
+                b.style.opacity = enabled ? "1" : "0.7";
+                b.style.cursor = enabled ? "pointer" : "not-allowed";
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            if (!window.pharmacianAuth) {
+                setAuthEnabled(false);
+                showError("Desktop authentication service unavailable. Please launch the Electron app.");
+                return;
+            }
+            
+            // Check if already logged in -> redirect to dashboard
+            try {
+                const res = await window.pharmacianAuth.getUser();
+                if (res && res.ok && res.data) {
+                    window.location.href = '/dashboard';
+                }
+            } catch (e) {
+                console.warn("Session check failed", e);
+            }
+        });
+
+        /* Clinical Authentication */
+        async function proceed() {
+            const auth = getAuth();
+            if (!auth) return;
+
+            const user = document.getElementById('username')?.value;
+            const pass = document.getElementById('password')?.value;
+
+            if (!user || !pass) {
+                showError("Authorisation Required: Please enter your Clinician ID and Access PIN.");
+                return;
+            }
+
+            const res = await auth.login(user, pass);
+            if (res && res.ok && res.data) {
+                document.body.style.transition = 'opacity 0.5s ease-out';
+                document.body.style.opacity = '0';
+                setTimeout(() => { window.location.href = '/dashboard'; }, 450);
+            } else {
+                showError(res?.error || "Access Denied: Invalid clinician credentials.");
+            }
+        }
+
+        async function continueAsGuest() {
+            const auth = getAuth();
+            if (!auth) return;
+
+            // Attempt guest login with default credentials
+            const res = await auth.login('guest', 'guest');
+            if (res && res.ok && res.data) {
+                document.body.style.transition = 'opacity 0.5s ease-out';
+                document.body.style.opacity = '0';
+                setTimeout(() => { window.location.href = '/dashboard'; }, 450);
+            } else {
+                // Fallback to manual guest field entry if no guest account exists
+                document.getElementById('username').value = 'guest';
+                document.getElementById('password').value = 'guest';
+                showError("Guest registration required. Please click 'Sign In' or contact IT.");
+            }
+        }
+
+        /* Enter key to login */
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') proceed();
+        });
+    </script>
+</body>
+</html>
+

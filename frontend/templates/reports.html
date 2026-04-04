@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacian | Clinical Reports</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/titlebar.js"></script>
+    <style>
+        body { display: flex; }
+
+        /* ── Page Header ── */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            animation: fadeInUp 0.4s ease-out;
+        }
+        .page-title h1 { font-size: 1.8rem; margin-bottom: 4px; }
+        .page-title p  { color: var(--clr-text-mid); font-size: 0.9rem; }
+
+        /* ── Stats Row ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+        .stat-chip {
+            background: var(--clr-card);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            animation: fadeInUp 0.5s ease-out both;
+        }
+        .stat-chip-icon { width: 42px; height: 42px; border-radius: 12px; background: var(--clr-accent-dim); color: var(--clr-accent); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+        .stat-chip-val { font-size: 1.5rem; font-weight: 800; color: var(--clr-accent); line-height: 1; }
+        .stat-chip-lbl { font-size: 0.75rem; font-weight: 600; color: var(--clr-text-mid); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+        /* ── Table Card ── */
+        .table-card { overflow: hidden; }
+        .table-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--clr-border);
+        }
+        .table-card-header h3 { font-size: 0.95rem; font-weight: 700; }
+        .table-wrap { overflow-x: auto; }
+
+        /* ── Export Button ── */
+        .btn-export {
+            background: transparent;
+            border: 1px solid var(--clr-danger);
+            color: var(--clr-danger);
+            padding: 7px 14px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-export:hover { background: var(--clr-danger); color: #fff; }
+
+        .btn-view-sm {
+            background: none;
+            border: 1px solid var(--clr-accent);
+            color: var(--clr-accent);
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        .btn-view-sm:hover { background: var(--clr-accent); color: #fff; }
+
+        /* ── Empty State ── */
+        .empty-state { text-align: center; padding: 60px 20px; }
+        .empty-state i { font-size: 3.5rem; color: var(--clr-border); margin-bottom: 16px; display: block; }
+        .empty-state p { color: var(--clr-text-mid); margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+        <a href="/dashboard" class="nav-link"><i class="fas fa-grid-2"></i> <span>Dashboard</span></a>
+        <a href="/diagnose"  class="nav-link"><i class="fas fa-stethoscope"></i> <span>New Assessment</span></a>
+        <a href="/patients"  class="nav-link"><i class="fas fa-user-group"></i> <span>All Patients</span></a>
+        <a href="/reports"   class="nav-link active"><i class="fas fa-file-medical"></i> <span>Reports</span></a>
+        <a href="/settings"  class="nav-link"><i class="fas fa-cog"></i> <span>Settings</span></a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Navbar -->
+        <nav class="top-bar">
+            <a href="/dashboard" class="logo">
+                <img src="/static/logo.png" alt="Pharmacian">
+                <span>Pharma<span>cian</span></span>
+            </a>
+            <div class="page-title">Clinical Reports</div>
+            <div class="user-menu">
+                <a href="/dashboard" class="btn-back"><i class="fas fa-arrow-left"></i> Dashboard</a>
+                <div class="user-badge">
+                    <div class="user-avatar" id="nav-user-initials">DC</div>
+                    <div>
+                        <div class="user-name" id="nav-user-name">Clinician</div>
+                        <div class="user-role" id="nav-user-role">Clinical Staff</div>
+                    </div>
+                </div>
+                <button class="btn-logout">Logout</button>
+            </div>
+        </nav>
+
+        <div class="content-area">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Clinical Reports</h1>
+                    <p>Review, export, and audit all diagnostic assessment records.</p>
+                </div>
+            </div>
+
+            <!-- Summary Stats -->
+            <div class="stats-row">
+                <div class="stat-chip" style="animation-delay:0s">
+                    <div class="stat-chip-icon"><i class="fas fa-file-medical"></i></div>
+                    <div>
+                        <div class="stat-chip-val" id="rpt-total">—</div>
+                        <div class="stat-chip-lbl">Total Reports</div>
+                    </div>
+                </div>
+                <div class="stat-chip" style="animation-delay:0.08s">
+                    <div class="stat-chip-icon" style="background:var(--clr-danger-dim);color:var(--clr-danger)"><i class="fas fa-triangle-exclamation"></i></div>
+                    <div>
+                        <div class="stat-chip-val" id="rpt-high" style="color:var(--clr-danger)">—</div>
+                        <div class="stat-chip-lbl">High Risk</div>
+                    </div>
+                </div>
+                <div class="stat-chip" style="animation-delay:0.16s">
+                    <div class="stat-chip-icon" style="background:var(--clr-success-dim);color:var(--clr-success)"><i class="fas fa-circle-check"></i></div>
+                    <div>
+                        <div class="stat-chip-val" id="rpt-low" style="color:var(--clr-success)">—</div>
+                        <div class="stat-chip-lbl">Low Risk</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Table -->
+            <div class="card table-card">
+                <div class="table-card-header">
+                    <h3>Recent Assessment Reports</h3>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Patient Name</th>
+                                <th>Age</th>
+                                <th>Primary Diagnosis</th>
+                                <th>Risk Level</th>
+                                <th>Date</th>
+                                <th style="text-align:right">Export PDF</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-body">
+                            <tr><td colspan="7">
+                                <div class="empty-state">
+                                    <div class="spinner" style="margin:0 auto 16px"></div>
+                                    <p>Loading reports…</p>
+                                </div>
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/nav.js"></script>
+    <script>
+        let reportData = [];
+
+        async function loadReports() {
+            if (!window.pharmacianDB) {
+                renderEmpty('Clinical database unavailable. Please use the Electron app.');
+                return;
+            }
+            try {
+                const res = await window.pharmacianDB.getRecentAssessments(50);
+                if (!res.ok) throw new Error(res.error);
+                reportData = res.data || [];
+                renderReports(reportData);
+                updateStats(reportData);
+            } catch (err) {
+                console.error('Reports load error:', err);
+                renderEmpty('Failed to load reports: ' + err.message);
+            }
+        }
+
+        function updateStats(data) {
+            document.getElementById('rpt-total').innerText = data.length;
+            document.getElementById('rpt-high').innerText  = data.filter(r => r.risk_level === 'High').length;
+            document.getElementById('rpt-low').innerText   = data.filter(r => r.risk_level === 'Low').length;
+        }
+
+        function renderReports(data) {
+            const tbody = document.getElementById('reports-body');
+            if (!data || !data.length) {
+                renderEmpty('No assessment records found. Begin diagnosing patients to generate reports.');
+                return;
+            }
+            tbody.innerHTML = data.map((r, idx) => {
+                const riskCls  = r.risk_level === 'High' ? 'badge-high' : r.risk_level === 'Medium' ? 'badge-med' : 'badge-low';
+                const date = new Date(r.created_at).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+                return `<tr>
+                    <td style="color:var(--clr-text-mid); font-size:0.8rem">${idx+1}</td>
+                    <td style="font-weight:600">${r.full_name}</td>
+                    <td>${r.age}</td>
+                    <td>${r.primary_disease || '—'}</td>
+                    <td><span class="badge ${riskCls}">${r.risk_level}</span></td>
+                    <td>${date}</td>
+                    <td style="text-align:right">
+                        <button class="btn-export" onclick="exportPDF(${idx})">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderEmpty(msg) {
+            document.getElementById('reports-body').innerHTML = `<tr><td colspan="7">
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <p>${msg}</p>
+                    <a href="/diagnose" class="btn-primary" style="text-decoration:none;display:inline-flex">
+                        <i class="fas fa-stethoscope"></i> New Assessment
+                    </a>
+                </div>
+            </td></tr>`;
+            document.getElementById('rpt-total').innerText = 0;
+            document.getElementById('rpt-high').innerText  = 0;
+            document.getElementById('rpt-low').innerText   = 0;
+        }
+
+        async function exportPDF(idx) {
+            const r = reportData[idx];
+            if (!r) return;
+
+            if (!window.pharmacianPDF) {
+                alert('PDF export is only available in the desktop application.');
+                return;
+            }
+
+            const date = new Date(r.created_at).toLocaleDateString('en-GB', {day:'2-digit', month:'long', year:'numeric'});
+            const riskColor = r.risk_level === 'High' ? '#ef4444' : r.risk_level === 'Medium' ? '#f59e0b' : '#10b981';
+
+            const htmlContent = `<!DOCTYPE html><html><head>
+                <style>
+                    body { font-family: 'Segoe UI', sans-serif; padding: 48px; color: #0f172a; background: #fff; }
+                    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0284c7; padding-bottom: 20px; margin-bottom: 28px; }
+                    .brand { font-size: 24px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 1px; }
+                    .brand span { color: #0284c7; }
+                    .report-title { font-size: 13px; color: #64748b; margin-top: 4px; }
+                    .section { margin-bottom: 24px; }
+                    .section h3 { font-size: 11px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; }
+                    .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+                    .row .lbl { color: #64748b; font-weight: 500; }
+                    .row .val { font-weight: 600; color: #0f172a; }
+                    .risk { display: inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 14px; color: ${riskColor}; border: 2px solid ${riskColor}; }
+                    .footer { margin-top: 40px; font-size: 10px; color: #94a3b8; text-align: center; }
+                </style>
+            </head><body>
+                <div class="header">
+                    <div><div class="brand">Pharma<span>cian</span></div><div class="report-title">Clinical Assessment Report</div></div>
+                    <div style="text-align:right;font-size:12px;color:#64748b">Report generated: ${date}</div>
+                </div>
+                <div class="section">
+                    <h3>Patient Information</h3>
+                    <div class="row"><span class="lbl">Full Name</span><span class="val">${r.full_name}</span></div>
+                    <div class="row"><span class="lbl">Age</span><span class="val">${r.age}</span></div>
+                    <div class="row"><span class="lbl">Assessment Date</span><span class="val">${date}</span></div>
+                </div>
+                <div class="section">
+                    <h3>Diagnostic Outcome</h3>
+                    <div class="row"><span class="lbl">Primary Diagnosis</span><span class="val">${r.primary_disease || 'N/A'}</span></div>
+                    <div class="row"><span class="lbl">Risk Classification</span><span class="val"><span class="risk">${r.risk_level}</span></span></div>
+                </div>
+                <div class="footer">Pharmacian Clinical System v2.0 — For Authorised Healthcare Use Only</div>
+            </body></html>`;
+
+            const filename = `pharmacian-report-${r.full_name.toLowerCase().replace(/\s+/g,'-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+            const result = await window.pharmacianPDF.savePDF(htmlContent, filename);
+            if (result.ok) {
+                alert(`✅ Report exported to:\n${result.data.path}`);
+            } else {
+                alert(`❌ Export failed: ${result.error}`);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadReports);
+    </script>
+</body>
+</html>

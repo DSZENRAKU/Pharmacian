@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pharmacian - Loading</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0; padding: 0;
+            background: #f8fafc;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            color: #0f172a;
+            -webkit-app-region: drag;
+            user-select: none;
+            overflow: hidden;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .logo-img { height: 50px; width: auto; object-fit: contain; }
+        
+        .brand-name {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 32px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #0f172a;
+        }
+        .brand-name span { color: #0284c7; }
+        
+        .sys-tag {
+            font-size: 13px; font-weight: 600; color: #64748b;
+            text-transform: uppercase; letter-spacing: 2px; margin-top:-5px;
+        }
+
+        /* Pulsing ring */
+        .loader {
+            position: relative; width: 60px; height: 60px; margin-top: 20px;
+        }
+        .loader::before, .loader::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%; opacity: 0;
+            box-shadow: 0 0 0 4px #0284c7;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        .loader::after { animation-delay: 1s; }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.6); opacity: 1; box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.8); }
+            100% { transform: scale(1.4); opacity: 0; box-shadow: 0 0 0 4px rgba(2, 132, 199, 0); }
+        }
+
+        .version {
+            position: absolute; bottom: 20px; right: 25px;
+            font-size: 12px; font-weight: 600; color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <!-- Assuming flask server is down during splash so we use relative path in electron dir, 
+             fallback to absolute relative to this file -->
+        <img src="../frontend/static/logo.png" class="logo-img" alt="Pharmacian">
+        <div style="display:flex; flex-direction: column;">
+            <div class="brand-name">Pharma<span>cian</span></div>
+            <div class="sys-tag">Clinical System</div>
+        </div>
+    </div>
+    
+    <div class="loader"></div>
+    <div class="version">v1.0.0-clinician</div>
+</body>
+</html>

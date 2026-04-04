@@ -1,0 +1,99 @@
+/* frontend/static/titlebar.css */
+
+/* ── Variables (inherit from style.css tokens) ── */
+:root {
+    --tb-height: 0px;
+}
+
+:root,
+:root[data-theme="dark"] {
+    --tb-bg:       #04091280;
+    --tb-bg-solid: #040912;
+    --tb-color:    #94a3b8;
+    --tb-hover:    rgba(255, 255, 255, 0.07);
+}
+
+:root[data-theme="light"] {
+    --tb-bg:       rgba(240, 244, 248, 0.88);
+    --tb-bg-solid: #e8edf3;
+    --tb-color:    #64748b;
+    --tb-hover:    rgba(2, 132, 199, 0.09);
+}
+
+/* ── Titlebar Shell ── */
+body.has-custom-titlebar {
+    padding-top: var(--tb-height) !important;
+}
+
+#electron-titlebar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--tb-height);
+    background: var(--tb-bg-solid);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 999999;
+    user-select: none;
+    font-family: 'Inter', sans-serif;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    -webkit-app-region: drag;
+    transition: background 0.3s ease;
+}
+
+/* ── Left Branding ── */
+#electron-titlebar .tb-branding {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 12px;
+    height: 100%;
+    pointer-events: none;
+}
+
+#electron-titlebar .tb-logo {
+    height: 16px;
+    width: auto;
+    object-fit: contain;
+    opacity: 0.85;
+}
+
+#electron-titlebar .tb-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tb-color);
+    letter-spacing: 0.3px;
+}
+
+/* ── Right Controls ── */
+#electron-titlebar .tb-controls {
+    display: flex;
+    height: 100%;
+    -webkit-app-region: no-drag;
+}
+
+#electron-titlebar .tb-btn {
+    width: 46px;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: var(--tb-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    outline: none;
+    font-size: 11px;
+}
+
+#electron-titlebar .tb-btn svg {
+    width: 11px;
+    height: 11px;
+    fill: currentColor;
+}
+
+#electron-titlebar .tb-btn:hover                 { background: var(--tb-hover); color: var(--clr-text-hi, #f8fafc); }
+#electron-titlebar .tb-btn-close:hover           { background: #e81123; color: #fff; }
+#electron-titlebar .tb-btn-theme                 { font-size: 12px; color: var(--tb-color); }
+#electron-titlebar .tb-btn-theme:hover           { background: var(--tb-hover); color: #f59e0b; }

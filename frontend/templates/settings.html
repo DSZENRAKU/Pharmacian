@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacian | Platform Settings</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/titlebar.js"></script>
+    <style>
+        body { display: flex; }
+
+        /* ── Page Header ── */
+        .page-header {
+            margin-bottom: 32px;
+            animation: fadeInUp 0.4s ease-out;
+        }
+        .page-header h1 { font-size: 1.8rem; margin-bottom: 4px; }
+        .page-header p  { color: var(--clr-text-mid); font-size: 0.9rem; }
+
+        /* ── Settings Grid ── */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 22px;
+        }
+
+        /* ── Settings Card ── */
+        .settings-card {
+            background: var(--clr-card);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md);
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            animation: fadeInUp 0.5s ease-out both;
+            transition: var(--transition);
+        }
+        .settings-card:hover { border-color: rgba(0, 172, 193, 0.25); }
+
+        .settings-card-header { display: flex; align-items: center; gap: 14px; }
+        .settings-card-icon {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            background: var(--clr-accent-dim);
+            color: var(--clr-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .settings-card h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--clr-text-hi);
+        }
+        .settings-card p {
+            font-size: 0.85rem;
+            color: var(--clr-text-mid);
+            line-height: 1.6;
+        }
+
+        /* ── Settings Fields ── */
+        .settings-fields { display: flex; flex-direction: column; gap: 12px; }
+
+        /* ── Btn Row ── */
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .btn-danger-outline {
+            background: transparent;
+            border: 1px solid var(--clr-danger);
+            color: var(--clr-danger);
+            padding: 11px 18px;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-danger-outline:hover { background: var(--clr-danger); color: #fff; }
+
+        /* ── Toast ── */
+        #toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--clr-card);
+            border: 1px solid var(--clr-border);
+            color: var(--clr-text-hi);
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            z-index: 5000;
+            box-shadow: var(--shadow-hi);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        #toast.success { border-left: 4px solid var(--clr-success); }
+        #toast.error   { border-left: 4px solid var(--clr-danger); }
+    </style>
+</head>
+<body>
+
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+        <a href="/dashboard" class="nav-link"><i class="fas fa-grid-2"></i> <span>Dashboard</span></a>
+        <a href="/diagnose"  class="nav-link"><i class="fas fa-stethoscope"></i> <span>New Assessment</span></a>
+        <a href="/patients"  class="nav-link"><i class="fas fa-user-group"></i> <span>All Patients</span></a>
+        <a href="/reports"   class="nav-link"><i class="fas fa-file-medical"></i> <span>Reports</span></a>
+        <a href="/settings"  class="nav-link active"><i class="fas fa-cog"></i> <span>Settings</span></a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Navbar -->
+        <nav class="top-bar">
+            <a href="/dashboard" class="logo">
+                <img src="/static/logo.png" alt="Pharmacian">
+                <span>Pharma<span>cian</span></span>
+            </a>
+            <div class="page-title">Platform Settings</div>
+            <div class="user-menu">
+                <a href="/dashboard" class="btn-back"><i class="fas fa-arrow-left"></i> Dashboard</a>
+                <div class="user-badge">
+                    <div class="user-avatar" id="nav-user-initials">DC</div>
+                    <div>
+                        <div class="user-name" id="nav-user-name">Clinician</div>
+                        <div class="user-role" id="nav-user-role">Clinical Staff</div>
+                    </div>
+                </div>
+                <button class="btn-logout">Logout</button>
+            </div>
+        </nav>
+
+        <div class="content-area">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>Platform Settings</h1>
+                <p>Manage data backups, security credentials, and system preferences.</p>
+            </div>
+
+            <div class="settings-grid">
+
+                <!-- Data Maintenance -->
+                <div class="settings-card" style="animation-delay:0s">
+                    <div class="settings-card-header">
+                        <div class="settings-card-icon"><i class="fas fa-database"></i></div>
+                        <h3>Data Maintenance</h3>
+                    </div>
+                    <p>Export AES-256 encrypted backups of the entire clinical database, or restore the system from a backup file.</p>
+                    <div class="btn-row">
+                        <button class="btn-primary" onclick="exportBackup()">
+                            <i class="fas fa-file-export"></i> Export Backup
+                        </button>
+                        <button class="btn-outline" onclick="importBackup()">
+                            <i class="fas fa-file-import"></i> Restore System
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Security Management -->
+                <div class="settings-card" style="animation-delay:0.08s">
+                    <div class="settings-card-header">
+                        <div class="settings-card-icon" style="background:var(--clr-warning-dim);color:var(--clr-warning)"><i class="fas fa-shield-halved"></i></div>
+                        <h3>Clinical Security</h3>
+                    </div>
+                    <p>Update your clinician access PIN to maintain platform integrity and data privacy.</p>
+                    <div class="settings-fields">
+                        <input type="password" id="old-pin" placeholder="Enter Current PIN">
+                        <input type="password" id="new-pin" placeholder="Enter New PIN">
+                        <button class="btn-primary" onclick="changePin()">
+                            <i class="fas fa-key"></i> Update Access PIN
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Appearance -->
+                <div class="settings-card" style="animation-delay:0.16s">
+                    <div class="settings-card-header">
+                        <div class="settings-card-icon" style="background:var(--clr-success-dim);color:var(--clr-success)"><i class="fas fa-palette"></i></div>
+                        <h3>Appearance</h3>
+                    </div>
+                    <p>Toggle between the dark clinical theme and the light mode interface.</p>
+                    <div style="display:flex; align-items:center; gap:16px; padding-top:4px">
+                        <button class="btn-outline" id="btn-theme-toggle" onclick="toggleThemeFromPage()">
+                            <i id="theme-icon" class="fas fa-sun"></i>
+                            <span id="theme-label">Switch to Light Mode</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- User Management (Admin) -->
+                <div id="admin-card" class="settings-card" style="display:none; animation-delay:0.24s">
+                    <div class="settings-card-header">
+                        <div class="settings-card-icon" style="background:var(--clr-accent-dim);color:var(--clr-accent)"><i class="fas fa-user-plus"></i></div>
+                        <h3>Clinician Management</h3>
+                    </div>
+                    <p>Register new clinical accounts for authorised healthcare staff. Administrator access required.</p>
+                    <div class="settings-fields">
+                        <input type="text" id="new-user" placeholder="Clinician ID / Staff ID">
+                        <input type="password" id="new-user-pin" placeholder="Initial Access PIN">
+                        <button class="btn-primary" onclick="createNewUser()">
+                            <i class="fas fa-user-plus"></i> Register Clinician
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast"><i id="toast-icon" class="fas fa-check-circle"></i> <span id="toast-text"></span></div>
+
+    <script src="/static/nav.js"></script>
+    <script>
+        let currentUser = null;
+
+        // ── Theme button sync ─────────────────────────────────────────────────
+        function syncThemeButton() {
+            const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+            const icon  = document.getElementById('theme-icon');
+            const label = document.getElementById('theme-label');
+            if (icon)  icon.className  = 'fas ' + (dark ? 'fa-sun' : 'fa-moon');
+            if (label) label.textContent = dark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+        }
+
+        function toggleThemeFromPage() {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('pharmacian_theme', next);
+            syncThemeButton();
+            // Update titlebar icon too
+            document.querySelectorAll('.theme-toggle-icon').forEach(ic => {
+                ic.className = 'theme-toggle-icon fas ' + (next === 'dark' ? 'fa-sun' : 'fa-moon');
+            });
+        }
+
+        // ── Toast helper ──────────────────────────────────────────────────────
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon  = document.getElementById('toast-icon');
+            const text  = document.getElementById('toast-text');
+            toast.className = `show ${type}`;
+            icon.className  = 'fas ' + (type === 'success' ? 'fa-circle-check' : 'fa-circle-x');
+            text.textContent = msg;
+            setTimeout(() => { toast.className = ''; }, 3800);
+        }
+
+        // ── Load user ─────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', async () => {
+            syncThemeButton();
+
+            if (!window.pharmacianAuth) return;
+            try {
+                const authRes = await window.pharmacianAuth.getUser();
+                if (authRes && authRes.ok && authRes.data) {
+                    currentUser = authRes.data;
+                    if (currentUser.role === 'admin') {
+                        document.getElementById('admin-card').style.display = 'flex';
+                    }
+                }
+            } catch (e) {
+                console.warn('[Settings] Could not load user:', e);
+            }
+        });
+
+        // ── Security Actions ──────────────────────────────────────────────────
+        async function changePin() {
+            if (!window.pharmacianAuth) { showToast('Desktop app required.', 'error'); return; }
+            
+            const userCtx = currentUser || window.__pharmacianUser;
+            if (!userCtx || typeof userCtx.id === 'undefined') { 
+                showToast('Authentication context lost. Please reload the page.', 'error'); 
+                return; 
+            }
+            
+            const oldP = document.getElementById('old-pin').value.trim();
+            const newP = document.getElementById('new-pin').value.trim();
+            if (!oldP || !newP) { showToast('Both current and new PINs are required.', 'error'); return; }
+            if (newP.length < 4) { showToast('New PIN must be at least 4 characters.', 'error'); return; }
+            
+            try {
+                const res = await window.pharmacianAuth.changePassword(userCtx.id, oldP, newP);
+                if (res && res.ok && res.data) {
+                    document.getElementById('old-pin').value = '';
+                    document.getElementById('new-pin').value = '';
+                    
+                    // Clear the force-change flag in DB
+                    try {
+                        if (window.pharmacianAuth.clearPasswordChangeFlag) {
+                            await window.pharmacianAuth.clearPasswordChangeFlag(userCtx.id);
+                        }
+                    } catch (_) {}
+                    
+                    // Hide the banner if it exists
+                    const banner = document.getElementById('pw-change-banner');
+                    if (banner) banner.remove();
+                    
+                    showToast('PIN updated successfully. Use your new PIN next time.', 'success');
+                } else {
+                    showToast(res?.error || 'Update failed (Database Error).', 'error');
+                    console.warn("Change password logic returned negative:", res);
+                }
+            } catch (err) { 
+                showToast(err.message, 'error'); 
+                console.error("Change password exception:", err);
+            }
+        }
+
+        async function createNewUser() {
+            if (!window.pharmacianAuth) { showToast('Desktop app required.', 'error'); return; }
+            const user = document.getElementById('new-user').value.trim();
+            const pin  = document.getElementById('new-user-pin').value.trim();
+            if (!user || !pin) { showToast('Clinician ID and PIN are required.', 'error'); return; }
+            try {
+                const res = await window.pharmacianAuth.createUser(user, pin, 'clinician');
+                if (res && res.ok) {
+                    document.getElementById('new-user').value = '';
+                    document.getElementById('new-user-pin').value = '';
+                    showToast(`Clinician "${user}" registered successfully.`, 'success');
+                } else {
+                    showToast(res?.error || 'Registration failed.', 'error');
+                }
+            } catch (err) { showToast(err.message, 'error'); }
+        }
+
+        // ── Data Actions ──────────────────────────────────────────────────────
+        async function exportBackup() {
+            if (!window.pharmacianDB) { showToast('Desktop app required for backup.', 'error'); return; }
+            const pass = prompt('Enter a password to encrypt this clinical backup (AES-256):');
+            if (!pass) return;
+            const res = await window.pharmacianDB.exportBackup(pass);
+            if (res && res.ok) showToast('Encrypted backup exported successfully.', 'success');
+            else showToast(res?.error || 'Backup failed.', 'error');
+        }
+
+        async function importBackup() {
+            if (!window.pharmacianDB) { showToast('Desktop app required for restore.', 'error'); return; }
+            const pass = prompt('Enter the backup password to decrypt and restore:');
+            if (!pass) return;
+            if (!confirm('⚠️ CRITICAL: This will overwrite ALL current clinical data. Are you sure?')) return;
+            const res = await window.pharmacianDB.importBackup(pass);
+            if (res && res.ok) {
+                showToast('Restoration complete. Reloading…', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showToast(res?.error || 'Restore failed. Check your password.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

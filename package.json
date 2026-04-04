@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "pharmacian-monitoring-desktop",
+  "version": "1.0.0",
+  "description": "Pharmacian Monitoring Desktop (Electron shell for Flask backend)",
+  "main": "electron/desktop_main.js",
+  "scripts": {
+    "dev": "node electron/dev_launcher.js",
+    "start": "node electron/dev_launcher.js"
+  },
+  "devDependencies": {
+    "electron": "^31.2.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.8.0",
+    "electron-store": "^8.1.0"
+  }
+}

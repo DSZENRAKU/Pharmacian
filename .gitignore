@@ -138,3 +138,10 @@ cython_debug/
 uploads/
 __pycache__/
 *.pyc
+
+# Node / Electron
+node_modules/
+package-lock.json
+npm-debug.log
+yarn.lock
+pnpm-lock.yaml

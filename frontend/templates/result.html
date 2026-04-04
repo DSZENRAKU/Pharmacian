@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacian | AI Prediction Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/pdf_report.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/titlebar.js"></script>
+
+    <style>
+        body { padding: 0; overflow-x: hidden; }
+        .page-body { padding: calc(var(--topbar-height) + var(--tb-height) + 32px) 40px 60px; max-width: 1320px; margin: 0 auto; }
+
+        /* ── Back nav bar (minimal) ── */
+        .result-topbar {
+            height: var(--topbar-height);
+            background: var(--clr-surface);
+            border-bottom: 1px solid var(--clr-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            position: fixed;
+            top: var(--tb-height);
+            left: 0; right: 0;
+            z-index: 101;
+            transition: background 0.3s ease;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .container { animation: fadeUp 0.6s ease-out; }
+        h2.section-title { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; color: var(--clr-text-mid); margin-bottom: 18px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* 1. Patient Summary Bar */
+        .summary-bar { background: var(--clr-card); border: 1px solid var(--clr-border); border-radius: var(--radius-md); padding: 20px 36px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 36px; flex-wrap: wrap; gap: 18px; transition: background 0.3s ease; }
+        .summary-item { display: flex; flex-direction: column; }
+        .summary-item span { font-size: 0.75rem; color: var(--clr-text-mid); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 4px; }
+        .summary-item strong { font-size: 1.2rem; font-weight: 700; font-family: 'Montserrat', sans-serif; color: var(--clr-text-hi); }
+
+        /* Top Grid */
+        .top-grid { display: grid; grid-template-columns: 340px 1fr; gap: 24px; margin-bottom: 32px; }
+
+        /* 2. Risk Gauge */
+        .risk-gauge-card { background: var(--clr-card); border-radius: var(--radius-md); padding: 36px; text-align: center; border: 1px solid var(--clr-border); box-shadow: var(--shadow-card); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: background 0.3s ease; }
+        .gauge-container { position: relative; width: 200px; height: 200px; margin-bottom: 16px; }
+        .gauge-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .gauge-bg { fill: none; stroke: var(--clr-border); stroke-width: 13; }
+        .gauge-progress { fill: none; stroke-linecap: round; stroke-width: 13; stroke-dasharray: 565.48; stroke-dashoffset: 565.48; transition: stroke-dashoffset 2.5s cubic-bezier(0.1, 0.8, 0.2, 1); }
+        .gauge-text-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .gauge-score { font-family: 'Montserrat', sans-serif; font-size: 4rem; font-weight: 800; line-height: 1; margin-bottom: 4px; transition: color 1s; }
+        .gauge-label { font-size: 0.85rem; color: var(--clr-text-mid); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;}
+        .gauge-subtext { font-size: 0.82rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-top: 10px; }
+
+        /* 4. Explainability */
+        .explain-card { background: var(--clr-card); border-radius: var(--radius-md); padding: 28px; border: 1px solid var(--clr-border); transition: background 0.3s ease; }
+        .chart-wrapper { height: 260px; width: 100%; }
+
+        /* 3. Disease Cards */
+        .disease-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-bottom: 32px; }
+        .disease-card { background: var(--clr-card); border: 1px solid var(--clr-border); border-radius: var(--radius-md); padding: 22px; display: flex; flex-direction: column; transition: var(--transition); animation: fadeUp 0.6s ease-out backwards; }
+        .disease-card:nth-child(1) { animation-delay: 0.1s; }
+        .disease-card:nth-child(2) { animation-delay: 0.18s; }
+        .disease-card:nth-child(3) { animation-delay: 0.26s; }
+        .disease-card:nth-child(4) { animation-delay: 0.34s; }
+        .disease-card:nth-child(5) { animation-delay: 0.42s; }
+        .disease-card:nth-child(6) { animation-delay: 0.5s; }
+        .disease-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,0.3); border-color: var(--clr-accent); }
+        .d-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .d-icon-title { display: flex; align-items: center; gap: 12px; }
+        .d-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.3rem; background: var(--clr-accent-dim); }
+        .d-title { font-weight: 600; font-size: 1rem; color: var(--clr-text-hi); }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .prog-container { width: 100%; height: 8px; background: var(--clr-border); border-radius: 5px; overflow: hidden; margin-top: auto; }
+        .prog-fill { height: 100%; border-radius: 5px; width: 0; transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.5s; }
+        .prog-text { display: flex; justify-content: space-between; font-size: 0.82rem; margin-top: 8px; font-weight: 600; color: var(--clr-text-mid); }
+        .prog-text span.pct { color: var(--clr-text-hi); font-family: 'Montserrat'; }
+
+        /* Bottom Grid */
+        .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; animation: fadeUp 0.7s ease-out 0.6s backwards; }
+        .recommendation { background: var(--clr-card); border: 1px solid var(--clr-accent); border-radius: var(--radius-md); padding: 30px; position: relative; overflow: hidden; transition: background 0.3s ease; }
+        .rec-icon { position: absolute; right: 20px; bottom: -30px; font-size: 9rem; color: var(--clr-accent-dim); opacity: 0.5; }
+        .recommendation h3 { color: var(--clr-accent); font-family: 'Montserrat'; font-size: 1.2rem; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .recommendation p { font-size: 1rem; color: var(--clr-text-mid); margin-bottom: 22px; line-height: 1.7; position: relative; z-index: 2; max-width: 90%; }
+        .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
+        .btn { padding: 14px 18px; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: var(--transition); border: none; font-family: 'Inter', sans-serif; text-decoration: none; }
+        .btn-blue { background: #3b82f6; color: #fff; }
+        .btn-blue:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(59,130,246,0.3); }
+        .btn-teal { background: var(--clr-accent); color: #000; box-shadow: 0 4px 14px var(--clr-accent-glow); }
+        .btn-teal:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        .btn-ghost { background: var(--clr-accent-dim); color: var(--clr-text-hi); border: 1px solid var(--clr-border); }
+        .btn-ghost:hover { background: var(--clr-card-hover, var(--clr-card)); }
+        .btn-outline { background: transparent; border: 1px solid var(--clr-border); color: var(--clr-text-hi); }
+        .btn-outline:hover { border-color: var(--clr-accent); color: var(--clr-accent); background: var(--clr-accent-dim); }
+
+        @media (max-width: 992px) {
+            .top-grid { grid-template-columns: 1fr; }
+            .bottom-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Minimal top bar -->
+    <div class="result-topbar">
+        <a href="/dashboard" class="logo">
+            <img src="/static/logo.png" alt="Pharmacian">
+            <span>Pharma<span>cian</span></span>
+        </a>
+        <div class="user-menu">
+            <a href="/dashboard" class="btn-back"><i class="fas fa-arrow-left"></i> Dashboard</a>
+            <div class="user-badge">
+                <div class="user-avatar" id="nav-user-initials">DC</div>
+                <div>
+                    <div class="user-name" id="nav-user-name">Clinician</div>
+                    <div class="user-role" id="nav-user-role">Clinical Staff</div>
+                </div>
+            </div>
+            <button class="btn-logout">Logout</button>
+        </div>
+    </div>
+    <script src="/static/nav.js"></script>
+
+<div class="page-body">
+    
+    <!-- 1. Patient Summary Bar -->
+    <div class="summary-bar">
+        <div class="summary-item">
+            <span>Patient Name</span>
+            <strong id="val-name" style="color:#fff;">John Doe</strong>
+        </div>
+        <div class="summary-item">
+            <span>Age</span>
+            <strong id="val-age" style="color:#fff;">45 Yrs</strong>
+        </div>
+        <div class="summary-item">
+            <span>Gender</span>
+            <strong id="val-gender" style="color:#fff;">Male</strong>
+        </div>
+        <div class="summary-item">
+            <span>Scan Date</span>
+            <strong id="val-date" style="color:#fff;">April 4, 2026</strong>
+        </div>
+        <div class="summary-item">
+            <span>Scan ID</span>
+            <strong id="val-id" style="color:var(--text-muted);">#PHR-8842-XC</strong>
+        </div>
+    </div>
+
+    <!-- Top Grid: Overall Risk & Explanability -->
+    <div class="top-grid">
+        
+        <!-- 2. Overall Risk Score -->
+        <div class="risk-gauge-card">
+            <h2 class="section-title">Overall Health Risk</h2>
+            
+            <div class="gauge-container">
+                <svg class="gauge-svg" viewBox="0 0 200 200">
+                    <circle class="gauge-bg" cx="100" cy="100" r="90"></circle>
+                    <circle class="gauge-progress" cx="100" cy="100" r="90" id="gauge-circle"></circle>
+                </svg>
+                <div class="gauge-text-container">
+                    <div class="gauge-score" id="risk-score">0</div>
+                    <div class="gauge-label">/ 100</div>
+                    <div class="gauge-subtext" id="risk-badge">Calculating</div>
+                </div>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-top: 10px;">
+                Calculated via Multi-Model Consensus (Random Forest, DT, Naive Bayes).
+            </p>
+        </div>
+
+        <!-- 4. Explainability Section -->
+        <div class="explain-card">
+            <h2 class="section-title" style="margin-bottom: 20px;">Top Target Indicators (Key Risk Factors)</h2>
+            <div class="chart-wrapper">
+                <canvas id="symptomsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="section-title" style="margin-bottom: 20px;">Predicted Disease Probabilities</h2>
+    
+    <!-- 3. Disease-wise Prediction Cards -->
+    <div class="disease-grid" id="disease-cards-container">
+        <!-- Injected via JS -->
+    </div>
+
+    <!-- Bottom Actions -->
+    <div class="bottom-grid">
+        
+        <!-- 5. Doctor's Recommendation Box -->
+        <div class="recommendation">
+            <i class="fas fa-stethoscope rec-icon"></i>
+            <h3><i class="fas fa-notes-medical"></i> Clinical AI Recommendation</h3>
+            <p id="rec-text">Analyzing diagnostic indicators for specialized recommendations...</p>
+            <button class="btn btn-outline" style="border-color: var(--accent-teal); color: var(--accent-teal);"><i class="fas fa-calendar-check"></i> Schedule Follow-up Appointment</button>
+        </div>
+
+        <!-- 6. Action Buttons Row (Grid 2x2) -->
+        <div class="action-buttons">
+            <button class="btn btn-blue" id="btn-download-pdf" onclick="handleDownloadPDF()">
+                <i class="fas fa-file-pdf"></i> Download PDF Report
+            </button>
+            <button class="btn btn-teal" style="opacity: 0.8; cursor: default;">
+                <i class="fas fa-check-circle"></i> Saved to Records
+            </button>
+            <a href="#" class="btn btn-outline"><i class="fas fa-envelope"></i> Share via Email</a>
+            <a href="/diagnose" class="btn btn-ghost"><i class="fas fa-plus"></i> New Assessment</a>
+        </div>
+    </div>
+
+</div><!-- /.page-body -->
+
+<script>
+    // --- Data Loader ---
+    let OVERALL_SCORE = 0;
+    let DISEASES = [];
+    let SYMPTOMS = [];
+    let PATIENT = {};
+    let VITALS  = {};
+
+    function loadAssessmentData() {
+        const raw = sessionStorage.getItem('latestAssessment');
+        if (!raw) {
+            console.warn("No clinical assessment data found. Redirecting to Patient Directory.");
+            window.location.href = "/patients";
+            return;
+        }
+
+        const data = JSON.parse(raw);
+        PATIENT = data.patient;
+        VITALS  = data.vitals;
+        const ai = data.result || {};
+        const predictions = ai.predictions || [];
+
+        OVERALL_SCORE = (predictions.length > 0) ? (predictions[0].probability || 0) : 0;
+        DISEASES = predictions.map(p => ({
+            name: p.disease || "Unknown",
+            prob: p.probability || 0,
+            icon: (p.disease || "").includes("Heart") ? "fa-heartbeat" : (p.disease || "").includes("Diabetes") ? "fa-cubes" : (p.disease || "").includes("Hypertension") ? "fa-tint" : "fa-disease",
+            color: (p.probability || 0) >= 70 ? "var(--danger)" : (p.probability || 0) >= 30 ? "var(--warning)" : "var(--success)"
+        }));
+        SYMPTOMS = ai.rationale || [];
+
+        // Update Summary Fields
+        document.getElementById('val-name').innerText = PATIENT.name || "---";
+        document.getElementById('val-age').innerText  = (PATIENT.age || "-") + " Yrs";
+        document.getElementById('val-gender').innerText = PATIENT.gender || "-";
+        document.getElementById('val-id').innerText = "#PH-" + Math.floor(Math.random()*90000 + 10000);
+        document.getElementById('val-date').innerText = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric'});
+
+        // Dynamic Recommendation Generation
+        const top = DISEASES.sort((a,b) => b.prob - a.prob)[0];
+        const recMap = {
+            "Heart Disease": "Immediate cardiac evaluation and lifestyle modification advised.",
+            "Hypertension": "Consistent BP monitoring and low-sodium diet recommended.",
+            "Diabetes": "Endocrinology follow-up and HbA1c screening suggested.",
+            "Liver Disease": "Specialist hepatology review and LFT panel advised.",
+            "Kidney Issues": "Renal function monitoring and nephrology consultation recommended."
+        };
+        const recText = `Based on the predictive model, the patient exhibits a ${top.prob}% probability of <strong style="color:#fff;">${top.name}</strong> indicators. ${recMap[top.name] || "Clinical monitoring and further diagnostic confirmation is strongly advised."}`;
+        document.getElementById('rec-text').innerHTML = recText;
+    }
+    
+    const SYMPTOM_WEIGHTS = [90, 85, 70, 65, 55];
+
+    // --- 1. Gauge Animation ---
+    document.addEventListener("DOMContentLoaded", () => {
+        loadAssessmentData();
+        
+        const circle = document.getElementById('gauge-circle');
+        const scoreText = document.getElementById('risk-score');
+        const badge = document.getElementById('risk-badge');
+        
+        // Determine color based on score
+        let strokeColor = "var(--success)";
+        let badgeBg = "rgba(16, 185, 129, 0.2)";
+        let badgeText = "LOW RISK";
+        
+        if (OVERALL_SCORE >= 70) {
+            strokeColor = "var(--danger)";
+            badgeBg = "rgba(239, 68, 68, 0.2)";
+            badgeText = "HIGH RISK";
+
+            // Trigger OS Notification
+            if (window.pharmacianApp) {
+                window.pharmacianApp.notify(
+                    "High Risk Detected",
+                    `Critical risk profile calculated for ${PATIENT.name || "Patient"} (${OVERALL_SCORE}%). Immediate review recommended.`
+                );
+            }
+        } else if (OVERALL_SCORE >= 30) {
+            strokeColor = "var(--warning)";
+            badgeBg = "rgba(245, 158, 11, 0.2)";
+            badgeText = "MODERATE RISK";
+        }
+
+        circle.style.stroke = strokeColor;
+        scoreText.style.color = strokeColor;
+        badge.style.backgroundColor = badgeBg;
+        badge.style.color = strokeColor;
+        badge.innerText = badgeText;
+
+        // Animate counter & stroke
+        setTimeout(() => {
+            const circumference = 2 * Math.PI * 90; // r=90
+            const offset = circumference - (OVERALL_SCORE / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+            
+            let count = 0;
+            const counter = setInterval(() => {
+                if(count >= OVERALL_SCORE) {
+                    clearInterval(counter);
+                    scoreText.innerText = OVERALL_SCORE;
+                } else {
+                    count++;
+                    scoreText.innerText = count;
+                }
+            }, 25);
+        }, 500);
+
+        // --- 2. Chart.js (Explainability) ---
+        if (typeof Chart === "undefined") {
+            console.error("Chart.js unavailable. Symptoms chart will not render in offline mode.");
+            return;
+        }
+        const ctx = document.getElementById('symptomsChart').getContext('2d');
+        
+        // Gradient for chart bars
+        const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+        gradient.addColorStop(0, "rgba(0, 172, 193, 0.2)");
+        gradient.addColorStop(1, "rgba(0, 172, 193, 1)");
+
+        Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--clr-text-mid').trim() || "#94a3b8";
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+        const gridCol = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)';
+        const tickCol = isDark ? '#94a3b8' : '#64748b';
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: SYMPTOMS,
+                datasets: [{
+                    label: 'Feature Importance (%)',
+                    data: SYMPTOM_WEIGHTS,
+                    backgroundColor: gradient,
+                    borderRadius: 6,
+                    barThickness: 24
+                }]
+            },
+            options: {
+                indexAxis: 'y', // Horizontal bar chart
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#112240',
+                        titleColor: '#fff',
+                        bodyColor: '#00ACC1',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        padding: 12
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: gridCol, drawBorder: false },
+                        max: 100,
+                        ticks: { stepSize: 25, color: tickCol }
+                    },
+                    y: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { font: { size: 13, weight: '500' }, color: tickCol }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+
+        // --- 3. Render Disease Cards ---
+        const container = document.getElementById('disease-cards-container');
+        
+        DISEASES.forEach((d) => {
+            // Determine badge based on probability
+            let bText = "Low";
+            let bColor = "var(--success)";
+            let bBg = "rgba(16, 185, 129, 0.1)";
+
+            if (d.prob >= 70) {
+                bText = "High";
+                bColor = "var(--danger)";
+                bBg = "rgba(239, 68, 68, 0.1)";
+            } else if (d.prob >= 30) {
+                bText = "Medium";
+                bColor = "var(--warning)";
+                bBg = "rgba(245, 158, 11, 0.1)";
+            }
+
+            const html = `
+                <div class="disease-card">
+                    <div class="d-card-header">
+                        <div class="d-icon-title">
+                            <div class="d-icon" style="color: ${d.color};"><i class="fas ${d.icon}"></i></div>
+                            <div class="d-title">${d.name}</div>
+                        </div>
+                        <div class="badge" style="background: ${bBg}; color: ${d.color};">${bText}</div>
+                    </div>
+                    
+                    <div class="prog-text">
+                        <span>Probability Match</span>
+                        <span class="pct">${d.prob}%</span>
+                    </div>
+                    <div class="prog-container">
+                        <div class="prog-fill" style="background: ${d.color}; width: 0%;" data-target="${d.prob}%"></div>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += html;
+        });
+
+        // Trigger progress bars animation
+        setTimeout(() => {
+            document.querySelectorAll('.prog-fill').forEach(fill => {
+                fill.style.width = fill.getAttribute('data-target');
+            });
+        }, 100);
+
+    });
+
+    // ── PDF Download handler ──────────────────────────────────────────────────
+    function handleDownloadPDF() {
+        // Build the report data object from the page's live data
+        const recommendations = {
+            "Heart Disease":  "Immediate cardiology referral advised. ECG and lipid panel within 7 days.",
+            "Hypertension":   "Blood pressure monitoring, lifestyle modification, medication review.",
+            "Diabetes":       "HbA1c test, dietary counselling, and endocrinology follow-up.",
+            "Liver Disease":  "LFT panel, ultrasound abdomen, hepatology review.",
+            "Kidney Issues":  "Renal function panel, urine analysis, nephrology consultation.",
+            "Cancer Risk":    "Standard cancer screening per age and gender guidelines."
+        };
+
+        // Derive risk level string from OVERALL_SCORE
+        const overallRiskLevel = OVERALL_SCORE >= 70 ? "High"
+                               : OVERALL_SCORE >= 30 ? "Medium"
+                               : "Low";
+
+        // Auto-generate doctor note based on highest-risk disease
+        const topDisease = [...DISEASES].sort((a, b) => b.prob - a.prob)[0];
+        const autoNote = `Based on the clinical assessment, the patient exhibits a ${topDisease.prob}% probability match ` +
+            `for ${topDisease.name}. ${recommendations[topDisease.name] || "Specialist consultation is recommended."} ` +
+            `A multi-disciplinary review is advised given the composite risk score of ${OVERALL_SCORE}/100. ` +
+            `All findings should be discussed with the treating clinician before any clinical decisions are made.`;
+
+        const reportData = {
+            patient: {
+                name:      document.querySelector('.summary-item:nth-child(1) strong')?.innerText || "Patient",
+                age:       document.querySelector('.summary-item:nth-child(2) strong')?.innerText || "N/A",
+                gender:    document.querySelector('.summary-item:nth-child(3) strong')?.innerText || "N/A",
+                patientId: document.querySelector('.summary-item:nth-child(5) strong')?.innerText || "N/A",
+                scanDate:  document.querySelector('.summary-item:nth-child(4) strong')?.innerText || new Date().toLocaleDateString(),
+            },
+            riskScore:   OVERALL_SCORE,
+            riskLevel:   overallRiskLevel,
+            predictions: DISEASES.map(d => ({
+                disease:        d.name,
+                probability:    d.prob,
+                riskLevel:      d.prob >= 70 ? "High" : d.prob >= 30 ? "Medium" : "Low",
+                recommendation: recommendations[d.name] || "Routine monitoring.",
+            })),
+            keyFactors:  SYMPTOMS,
+            doctorNote:  autoNote,
+        };
+
+        generatePDF(reportData);
+    }
+</script>
+</body>
+</html>
+
