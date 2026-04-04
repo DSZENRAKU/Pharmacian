@@ -1,7 +1,8 @@
 from flask import Blueprint, current_app, jsonify, render_template, request, redirect
 
-from prediction_engine import predict_case, sanitize_medications
+from prediction_engine import predict_case, sanitize_medications, train_pipeline
 from response_formatting import error_response, refine_response, success_response
+from model_container import load_state_from_disk
 
 bp = Blueprint("main", __name__)
 
@@ -82,14 +83,19 @@ def predict():
         return jsonify(payload), code
 
     state = current_app.extensions.get("model_state")
-    if not (
-        state
-        and state.random_forest
-        and state.decision_tree
-        and state.naive_bayes
-    ):
-        payload, code = error_response("Matrix offline.")
+    if not state:
+        payload, code = error_response("Internal server configuration error.")
         return jsonify(payload), code
+
+    # Try to load pre-trained artifacts from disk if they aren't already loaded.
+    if not (state.random_forest and state.decision_tree and state.naive_bayes):
+        loaded = load_state_from_disk(state)
+        if not loaded:
+            try:
+                train_pipeline(state)
+            except Exception:
+                payload, code = error_response("Matrix offline.")
+                return jsonify(payload), code
 
     is_refined = bool(data.get("is_refined", False))
     status, payload = predict_case(

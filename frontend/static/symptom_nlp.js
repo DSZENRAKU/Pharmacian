@@ -234,8 +234,21 @@ function initSymptomNLP() {
     matchedSymptoms.forEach(s => {
       const tag = document.createElement("span");
       tag.className = "nlp-tag";
-      tag.innerHTML = `<i class="fas fa-check-circle"></i> ${s}
-        <button class="nlp-tag-remove" data-symptom="${s}" title="Remove">&times;</button>`;
+
+      const icon = document.createElement("i");
+      icon.className = "fas fa-check-circle";
+      tag.appendChild(icon);
+
+      const text = document.createTextNode(" " + s + " ");
+      tag.appendChild(text);
+
+      const btn = document.createElement("button");
+      btn.className = "nlp-tag-remove";
+      btn.setAttribute("data-symptom", s);
+      btn.title = "Remove";
+      btn.innerText = "×";
+      tag.appendChild(btn);
+
       tagContainer.appendChild(tag);
     });
 
@@ -253,24 +266,37 @@ function initSymptomNLP() {
     });
   }
 
-  function updateBadge() {
+    function updateBadge() {
     const count = pillGroup.querySelectorAll(".pill.active").length;
+    if (!badgeEl) return;
     if (count === 0) {
       badgeEl.style.display = "none";
     } else {
       badgeEl.style.display = "inline-flex";
-      badgeEl.innerHTML = `<i class="fas fa-circle-check"></i> ${count} symptom${count !== 1 ? "s" : ""} detected`;
+      // clear existing content
+      badgeEl.textContent = "";
+      const icon = document.createElement("i");
+      icon.className = "fas fa-circle-check";
+      badgeEl.appendChild(icon);
+      const txt = document.createTextNode(` ${count} symptom${count !== 1 ? "s" : ""} detected`);
+      badgeEl.appendChild(txt);
       badgeEl.className = "nlp-badge " + (count >= 4 ? "badge-high" : count >= 2 ? "badge-medium" : "badge-low");
     }
   }
 
-  function renderSuggestions(suggestions) {
+    function renderSuggestions(suggestions) {
     if (!suggestions || suggestions.length === 0) {
       suggestionEl.style.display = "none";
       return;
     }
     suggestionEl.style.display = "flex";
-    suggestionEl.innerHTML = `<i class="fas fa-lightbulb"></i> <span>Did you mean: ${suggestions.join(" &nbsp;|&nbsp; ")}</span>`;
+    suggestionEl.textContent = "";
+    const icon = document.createElement("i");
+    icon.className = "fas fa-lightbulb";
+    suggestionEl.appendChild(icon);
+    const span = document.createElement("span");
+    span.textContent = " Did you mean: " + suggestions.join("  |  ");
+    suggestionEl.appendChild(span);
   }
 
   function runParser(text) {
@@ -292,9 +318,16 @@ function initSymptomNLP() {
     }
 
     // Show typing indicator
-    badgeEl.style.display = "inline-flex";
-    badgeEl.className = "nlp-badge badge-typing";
-    badgeEl.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Analysing...`;
+    if (badgeEl) {
+      badgeEl.style.display = "inline-flex";
+      badgeEl.className = "nlp-badge badge-typing";
+      badgeEl.textContent = "";
+      const spinning = document.createElement("i");
+      spinning.className = "fas fa-circle-notch fa-spin";
+      badgeEl.appendChild(spinning);
+      const t = document.createTextNode(" Analysing...");
+      badgeEl.appendChild(t);
+    }
 
     _debounceTimer = setTimeout(() => runParser(text), 500);
   });

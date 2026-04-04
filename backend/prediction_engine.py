@@ -8,11 +8,67 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 
-from medical_kb_config import DISEASE_PANEL_INFO, PROFILE_COLS, RESEARCH_DB, TRAINING_DATA_PATH
+import os
+import joblib
+from medical_kb_config import (
+    DISEASE_PANEL_INFO,
+    PROFILE_COLS,
+    RESEARCH_DB,
+    TRAINING_DATA_PATH,
+    MODELS_DIR,
+    RF_MODEL_PATH,
+    DT_MODEL_PATH,
+    NB_MODEL_PATH,
+    SYMPTOMS_LIST_PATH,
+)
 from model_container import ModelState
 
 
+class SymptomTranslator:
+    """ Maps common Hindi and Marathi medical terms to English equivalents. """
+    MAPPING = {
+        # Hindi
+        "सिरदर्द": "headache", "बुखार": "fever", "थकान": "fatigue", "खांसी": "cough",
+        "मतली": "nausea", "उल्टी": "vomiting", "सांस फूलना": "breathlessness",
+        "सीने में दर्द": "chest pain", "चक्कर": "dizziness", "बदन दर्द": "muscle aches",
+        "गले में खराश": "sore throat", "ठिठुरन": "chills", "पेट दर्द": "abdominal pain",
+        "जुकाम": "cold", "दस्त": "diarrhea", "कब्ज": "constipation",
+        "खुजली": "itching", "चकत्ते": "skin rash", "जोड़ों का दर्द": "joint pain",
+
+        # Marathi
+        "डोकेदुखी": "headache", "ताप": "fever", "थवा": "fatigue", "खोकला": "cough",
+        "मळमळ": "nausea", "उलट्या": "vomiting", "दम लागणे": "breathlessness",
+        "छातीत दुखणे": "chest pain", "चक्कर येणे": "dizziness", "अंगदुखी": "muscle aches",
+        "घसा खवखवणे": "sore throat", "थंडी वाजणे": "chills", "पोटदुखी": "abdominal pain",
+        "सर्दी": "cold", "जुलाब": "diarrhea", "बद्धकोष्ठता": "constipation",
+        "खाज": "itching", "पुरळ": "skin rash", "सांधेदुखी": "joint pain"
+    }
+
+    @classmethod
+    def translate(cls, text: str) -> str:
+        if not text: return ""
+        translated = text.lower()
+        for native, english in cls.MAPPING.items():
+            translated = translated.replace(native.lower(), english)
+        return translated
+
+
 def train_pipeline(state: ModelState) -> None:
+    logging.info("Checking for existing models...")
+    
+    if all(p.exists() for p in [RF_MODEL_PATH, DT_MODEL_PATH, NB_MODEL_PATH, SYMPTOMS_LIST_PATH]):
+        try:
+            state.random_forest = joblib.load(RF_MODEL_PATH)
+            state.decision_tree = joblib.load(DT_MODEL_PATH)
+            state.naive_bayes = joblib.load(NB_MODEL_PATH)
+            state.symptoms_list = joblib.load(SYMPTOMS_LIST_PATH)
+            # We still need df_train for refinement questions (to get patterns)
+            state.df_train = pd.read_csv(TRAINING_DATA_PATH)
+            logging.info("Pre-trained models loaded successfully.")
+            return
+        except Exception as e:
+            logging.warning(f"Failed to load pre-trained models: {e}. Re-training...")
+
     logging.info("Training pipeline started.")
     df_train = pd.read_csv(TRAINING_DATA_PATH)
     symptoms_list = df_train.columns[:-1].tolist()
@@ -28,18 +84,27 @@ def train_pipeline(state: ModelState) -> None:
     naive_bayes = GaussianNB()
     naive_bayes.fit(X, y)
 
+    # Save models
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    joblib.dump(random_forest, RF_MODEL_PATH)
+    joblib.dump(decision_tree, DT_MODEL_PATH)
+    joblib.dump(naive_bayes, NB_MODEL_PATH)
+    joblib.dump(symptoms_list, SYMPTOMS_LIST_PATH)
+
     state.df_train = df_train
     state.symptoms_list = symptoms_list
     state.random_forest = random_forest
     state.decision_tree = decision_tree
     state.naive_bayes = naive_bayes
-    logging.info("Training pipeline completed.")
+    logging.info("Training pipeline completed and models saved.")
 
 
 def extract_hybrid_features(text: str, profile_data: Dict, symptoms_list: List[str]) -> List[int]:
     if not isinstance(text, str):
         return [0] * len(symptoms_list)
-    clean_text = re.sub(r"[^a-z\s]", " ", text.lower())
+    # Multilingual translation from Hindi/Marathi to English
+    translated_text = SymptomTranslator.translate(text)
+    clean_text = re.sub(r"[^a-z\s]", " ", translated_text.lower())
     user_tokens = set(clean_text.split())
     s_core_list = symptoms_list[: -len(PROFILE_COLS)]
     features = []

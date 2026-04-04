@@ -19,12 +19,25 @@ def create_app():
     setup_logging(base_dir)
 
     state = ModelState()
-    try:
-        train_pipeline(state)
-    except Exception:
-        logging.exception("Training pipeline failed.")
+    # Do NOT train models at app startup. Models will be loaded lazily
+    # on demand to keep startup fast and predictable.
 
     app.extensions["model_state"] = state
+    # Health endpoint to report model availability
+    @app.route("/healthz")
+    def healthz():
+        from model_container import load_state_from_disk
+        from medical_kb_config import (RF_MODEL_PATH, DT_MODEL_PATH, NB_MODEL_PATH, SYMPTOMS_LIST_PATH)
+
+        files = {
+            "random_forest": str(RF_MODEL_PATH.exists()),
+            "decision_tree": str(DT_MODEL_PATH.exists()),
+            "naive_bayes": str(NB_MODEL_PATH.exists()),
+            "symptoms_list": str(SYMPTOMS_LIST_PATH.exists()),
+        }
+        models_loaded = bool(state.random_forest and state.decision_tree and state.naive_bayes)
+        return jsonify({"ok": True, "models_loaded": models_loaded, "artifact_files": files})
+    
     app.register_blueprint(bp)
 
     @app.errorhandler(Exception)

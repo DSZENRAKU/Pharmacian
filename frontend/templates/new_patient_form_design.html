@@ -2,492 +2,405 @@
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:5000;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacian | New Clinical Assessment</title>
+    <title>Pharmacian | New Assessment</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/style.css">
     <script src="/static/titlebar.js"></script>
     <style>
-        body { display: flex; }
-        .form-layout { display: grid; grid-template-columns: 240px 1fr; gap: 32px; margin-top: 24px; }
-        .scroll-spy { position: sticky; top: 100px; background: var(--clr-card); border: 1px solid var(--clr-border); border-radius: var(--radius-md); padding: 24px; height: fit-content; }
-        .step-list { display: flex; flex-direction: column; gap: 16px; list-style: none; }
-        .step { display: flex; align-items: center; gap: 12px; color: var(--clr-text-mid); font-weight: 600; cursor: pointer; transition: var(--transition); }
-        .step.active { color: var(--clr-accent); }
-        .step-circle { width: 32px; height: 32px; border-radius: 50%; background: var(--clr-bg); border: 2px solid var(--clr-border); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; transition: var(--transition); }
-        .step.active .step-circle { background: var(--clr-accent-dim); border-color: var(--clr-accent); color: var(--clr-accent); }
-        .form-container { display: flex; flex-direction: column; gap: 32px; }
-        .form-section { background: var(--clr-card); border: 1px solid var(--clr-border); border-radius: var(--radius-md); padding: 32px; animation: fadeInUp 0.5s ease-out both; }
-        .section-header { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--clr-border); }
-        .section-header h2 { font-size: 1.25rem; color: #fff; display: flex; align-items: center; gap: 12px; }
-        .section-header h2 i { color: var(--clr-accent); }
-        .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
-        .form-group { display: flex; flex-direction: column; gap: 8px; }
-        .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--clr-text-mid); text-transform: uppercase; letter-spacing: 0.5px; }
-        .form-control { background: var(--clr-bg); border: 1px solid var(--clr-border); color: var(--clr-text); padding: 12px 16px; border-radius: 8px; font-family: inherit; font-size: 1rem; transition: var(--transition); }
-        .form-control:focus { outline: none; border-color: var(--clr-accent); box-shadow: 0 0 0 3px var(--clr-accent-dim); }
-        .form-control.error { border-color: #ef4444; }
-        .error-msg { color: #ef4444; font-size: 0.8rem; display: none; margin-top: 4px; }
-        .pill-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
-        .pill { background: var(--clr-bg); border: 1px solid var(--clr-border); border-radius: 20px; padding: 8px 16px; font-size: 0.9rem; font-weight: 500; color: var(--clr-text-mid); cursor: pointer; transition: var(--transition); user-select: none; }
-        .pill:hover { border-color: var(--clr-accent); color: var(--clr-text); }
-        .pill.active { background: var(--clr-accent); border-color: var(--clr-accent); color: #fff; }
-        .gender-options { display: flex; gap: 16px; }
-        .radio-card { flex: 1; position: relative; }
-        .radio-card input { position: absolute; opacity: 0; cursor: pointer; }
-        .radio-card label { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: var(--clr-bg); border: 1px solid var(--clr-border); border-radius: 8px; cursor: pointer; transition: var(--transition); font-weight: 500; color: var(--clr-text); font-size: 1rem; }
-        .radio-card input:checked + label { background: var(--clr-accent-dim); border-color: var(--clr-accent); color: var(--clr-accent); }
-        .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
-        .modal-content { background-color: var(--clr-card); margin: 10% auto; padding: 32px; border: 1px solid var(--clr-border); width: 80%; max-width: 600px; border-radius: var(--radius-lg); animation: fadeInUp 0.3s ease-out; }
-        .modal-content h3 { margin-bottom: 20px; color: #fff; }
-        .question-item { margin-bottom: 12px; padding: 12px; background: var(--clr-bg); border: 1px solid var(--clr-border); border-radius: 8px; }
-        .question-item label { display: flex; align-items: center; gap: 12px; font-weight: 500; cursor:pointer;}
-        .question-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--clr-accent); }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+        body { display: flex; flex-direction: column; }
+        .page-body { padding: calc(var(--topbar-height) + var(--tb-height) + 32px) 40px 60px; max-width: 1200px; margin: 0 auto; width: 100%; }
+        
+        /* Multi-step Nav */
+        .assessment-steps { display: flex; justify-content: space-between; margin-bottom: 40px; position: relative; }
+        .assessment-steps::after { content: ''; position: absolute; top: 18px; left: 0; right: 0; height: 2px; background: var(--clr-border); z-index: 1; }
+        .step { position: relative; z-index: 2; background: var(--clr-bg); padding: 0 15px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: var(--transition); }
+        .step-circle { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--clr-border); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--clr-text-lo); background: var(--clr-bg); transition: var(--transition); }
+        .step-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--clr-text-lo); transition: var(--transition); }
+        .step.active .step-circle { border-color: var(--clr-accent); color: var(--clr-accent); box-shadow: 0 0 15px var(--clr-accent-glow); }
+        .step.active .step-label { color: var(--clr-text-hi); }
+        .step.completed .step-circle { background: var(--clr-accent); border-color: var(--clr-accent); color: #fff; }
+
+        /* Form Layout */
+        .form-container { display: grid; grid-template-columns: 1fr 340px; gap: 32px; align-items: start; }
+        .form-section { background: var(--clr-card); border: 1px solid var(--clr-border); border-radius: var(--radius-md); padding: 32px; margin-bottom: 24px; animation: fadeInUp 0.5s ease-out both; }
+        .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--clr-border); padding-bottom: 16px; }
+        .section-header i { color: var(--clr-accent); font-size: 1.2rem; }
+        .section-header h2 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-grid.vitals { grid-template-columns: repeat(2, 1fr); }
+        
+        /* Symptom Pills */
+        .symptom-selector { margin-top: 15px; }
+        .symptom-group { margin-bottom: 20px; }
+        .symptom-group-label { font-size: 0.75rem; font-weight: 700; color: var(--clr-text-lo); text-transform: uppercase; margin-bottom: 10px; display: block; }
+        .pills-container { display: flex; flex-wrap: wrap; gap: 8px; }
+        .pill { padding: 8px 16px; border-radius: 20px; background: var(--clr-surface); border: 1px solid var(--clr-border); cursor: pointer; font-size: 0.85rem; transition: var(--transition); white-space: nowrap; }
+        .pill:hover { border-color: var(--clr-accent); color: var(--clr-accent); }
+        .pill.active { background: var(--clr-accent-dim); border-color: var(--clr-accent); color: var(--clr-accent); font-weight: 600; }
+
+        /* AI Insights Panel */
+        .ai-sidebar { position: sticky; top: calc(var(--topbar-height) + var(--tb-height) + 32px); }
+        .insight-card { background: var(--clr-card); border: 1px solid var(--clr-accent); border-radius: var(--radius-md); padding: 24px; box-shadow: 0 10px 30px rgba(0, 172, 193, 0.1); }
+        .insight-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; color: var(--clr-accent); }
+        .insight-header h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .prediction-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--clr-border); }
+        .prediction-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .pred-name { font-size: 0.88rem; font-weight: 600; }
+        .pred-prob { font-family: 'Montserrat', sans-serif; font-weight: 800; color: var(--clr-accent); }
+        .insight-placeholder { color: var(--clr-text-lo); font-size: 0.82rem; text-align: center; line-height: 1.6; padding: 20px 0; }
+
+        /* Footer Actions */
+        .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 24px; background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius-md); }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
+        .modal-content { background-color: var(--clr-card); margin: 10% auto; padding: 40px; border: 1px solid var(--clr-accent); width: 500px; border-radius: var(--radius-md); box-shadow: var(--shadow-hi); animation: fadeInUp 0.4s ease-out; }
+        .question-item { background: var(--clr-surface); padding: 16px; border-radius: var(--radius-sm); margin-bottom: 12px; border: 1px solid var(--clr-border); transition: var(--transition); }
+        .question-item:hover { border-color: var(--clr-accent); }
+        .question-item label { display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 0.95rem; }
+        .question-item input { width: 18px; height: 18px; accent-color: var(--clr-accent); }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; }
+
+        .error { border-color: var(--clr-danger) !important; }
+        .error-msg { color: var(--clr-danger); font-size: 0.72rem; display: none; margin-top: 4px; }
+
+        @media (max-width: 992px) {
+            .form-container { grid-template-columns: 1fr; }
+            .ai-sidebar { position: static; margin-bottom: 24px; }
+        }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
-        <a href="/dashboard" class="nav-link"><i class="fas fa-grid-2"></i> <span>Dashboard</span></a>
-        <a href="/diagnose"  class="nav-link active"><i class="fas fa-stethoscope"></i> <span>New Assessment</span></a>
-        <a href="/patients"  class="nav-link"><i class="fas fa-user-group"></i> <span>All Patients</span></a>
-        <a href="/reports"   class="nav-link"><i class="fas fa-file-medical"></i> <span>Reports</span></a>
-        <a href="/settings"  class="nav-link"><i class="fas fa-cog"></i> <span>Settings</span></a>
-    </aside>
 
-    <main class="main-content">
-        <nav class="top-bar">
-            <a href="/dashboard" class="logo">
-                <img src="/static/logo.png" alt="Pharmacian">
-                <span>Pharma<span>cian</span></span>
-            </a>
-            <div class="user-menu">
-                <div class="user-badge">
-                    <div class="user-avatar" id="nav-user-initials">DC</div>
-                    <div>
-                        <div class="user-name" id="nav-user-name">Clinician</div>
-                        <div class="user-role" id="nav-user-role">Clinical Staff</div>
-                    </div>
+    <nav class="top-bar">
+        <a href="/dashboard" class="logo">
+            <img src="/static/logo.png" alt="Pharmacian">
+            <span>Pharma<span>cian</span></span>
+        </a>
+        <div class="user-menu">
+            <div class="user-badge">
+                <div class="user-avatar" id="nav-user-initials">DC</div>
+                <div>
+                    <div class="user-name" id="nav-user-name">Clinician</div>
+                    <div class="user-role" id="nav-user-role">Clinical Staff</div>
                 </div>
-                <button class="btn-logout">Logout</button>
             </div>
-        </nav>
+            <button class="btn-logout">Logout</button>
+        </div>
+    </nav>
 
-        <div class="content-area">
-            <div class="form-layout">
-                <div class="scroll-spy">
-                    <ul class="step-list">
-                        <li class="step active" onclick="scrollToSec('sec-1')"><div class="step-circle">1</div><span>Patient Profile</span></li>
-                        <li class="step" onclick="scrollToSec('sec-2')"><div class="step-circle">2</div><span>Clinical Vitals</span></li>
-                        <li class="step" onclick="scrollToSec('sec-3')"><div class="step-circle">3</div><span>Symptom Profile</span></li>
-                    </ul>
-                </div>
-
-                <form id="prediction-form" class="form-container">
-                    <div class="form-section" id="sec-1">
-                        <div class="section-header"><h2><i class="fas fa-user"></i> Patient Profile</h2></div>
-                        <div class="input-grid">
-                            <div class="form-group" style="grid-column: 1 / -1;">
-                                <label>Full Name *</label>
-                                <input type="text" id="full-name" class="form-control" placeholder="e.g. John Doe">
-                                <span class="error-msg">Name is required</span>
-                            </div>
-                            <div class="form-group">
-                                <label>Age *</label>
-                                <input type="number" id="age" class="form-control" placeholder="Years" min="1" max="120">
-                                <span class="error-msg">Valid age is required</span>
-                            </div>
-                            <div class="form-group">
-                                <label>Blood Group</label>
-                                <select id="blood-group" class="form-control">
-                                    <option value="">Unknown</option>
-                                    <option value="A+">A+</option><option value="A-">A-</option>
-                                    <option value="B+">B+</option><option value="B-">B-</option>
-                                    <option value="O+">O+</option><option value="O-">O-</option>
-                                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="grid-column: 1 / -1;">
-                                <label>Biological Sex *</label>
-                                <div class="gender-options">
-                                    <div class="radio-card"><input type="radio" name="gender" id="g-male" value="Male"><label for="g-male"><i class="fas fa-mars"></i> Male</label></div>
-                                    <div class="radio-card"><input type="radio" name="gender" id="g-female" value="Female"><label for="g-female"><i class="fas fa-venus"></i> Female</label></div>
-                                    <div class="radio-card"><input type="radio" name="gender" id="g-other" value="Other"><label for="g-other"><i class="fas fa-genderless"></i> Other</label></div>
-                                </div>
-                                <span id="gender-error" class="error-msg">Please select gender</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-section" id="sec-2">
-                        <div class="section-header"><h2><i class="fas fa-heartbeat"></i> Clinical Vitals & History</h2></div>
-                        <div class="input-grid">
-                            <div class="form-group"><label>Height (cm)</label><input type="number" id="height" class="form-control" placeholder="175"></div>
-                            <div class="form-group"><label>Weight (kg)</label><input type="number" id="weight" class="form-control" placeholder="70"></div>
-                            <div class="form-group"><label>BMI (Auto-calc)</label><input type="text" id="bmi" class="form-control" readonly placeholder="--"></div>
-                        </div>
-                        <div class="input-grid" style="margin-top:24px;">
-                            <div class="form-group"><label>Blood Pressure (Sys)</label><input type="number" id="bp-sys" class="form-control" placeholder="120"></div>
-                            <div class="form-group"><label>Blood Pressure (Dia)</label><input type="number" id="bp-dia" class="form-control" placeholder="80"></div>
-                            <div class="form-group"><label>Blood Sugar (mg/dL)</label><input type="number" id="blood-sugar" class="form-control" placeholder="95"></div>
-                            <div class="form-group"><label>Heart Rate (BPM)</label><input type="number" id="heart-rate" class="form-control" placeholder="72"></div>
-                        </div>
-                        <h3 style="margin-top: 32px; font-size: 1rem; color: var(--clr-text-mid); text-transform: uppercase;">Pre-existing Conditions</h3>
-                        <div class="gender-options" style="margin-top: 16px;">
-                            <div class="radio-card" style="padding:12px; border:1px solid var(--clr-border); border-radius:8px; display:flex; align-items:center; gap:8px;">
-                                <input type="checkbox" id="hist-heart" style="position:static; opacity:1; cursor:pointer;" class="form-control">
-                                <label for="hist-heart" style="border:none; padding:0; background:none;">Hypertension/Heart Issue</label>
-                            </div>
-                            <div class="radio-card" style="padding:12px; border:1px solid var(--clr-border); border-radius:8px; display:flex; align-items:center; gap:8px;">
-                                <input type="checkbox" id="hist-diabetes" style="position:static; opacity:1; cursor:pointer;" class="form-control">
-                                <label for="hist-diabetes" style="border:none; padding:0; background:none;">Diabetes</label>
-                            </div>
-                            <div class="radio-card" style="padding:12px; border:1px solid var(--clr-border); border-radius:8px; display:flex; align-items:center; gap:8px;">
-                                <input type="checkbox" id="hist-surgery" style="position:static; opacity:1; cursor:pointer;" class="form-control">
-                                <label for="hist-surgery" style="border:none; padding:0; background:none;">Recent Surgery</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-section" id="sec-3">
-                        <div class="section-header"><h2><i class="fas fa-clipboard-list"></i> Symptom Profiling</h2></div>
-                        <p style="color:var(--clr-text-mid); font-size: 0.9rem; margin-bottom: 12px;">Quick Select Symptoms:</p>
-                        <div class="pill-container">
-                            <div class="pill">Fever</div><div class="pill">Cough</div><div class="pill">Fatigue</div>
-                            <div class="pill">Headache</div><div class="pill">Nausea</div><div class="pill">Shortness of Breath</div>
-                            <div class="pill">Chest Pain</div><div class="pill">Dizziness</div><div class="pill">Muscle Aches</div>
-                            <div class="pill">Sore Throat</div><div class="pill">Chills</div><div class="pill">Abdominal Pain</div>
-                        </div>
-                        <div class="form-group" style="margin-top: 24px;">
-                            <label>Detailed Clinical Notes (NLP)</label>
-                            <textarea id="symptom-nlp-input" class="form-control" rows="4" placeholder="Describe symptoms..."></textarea>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" id="btn-clear" class="btn-view" style="padding: 12px 24px; font-size: 1rem;">Clear Form</button>
-                        <button type="submit" id="btn-submit" class="btn-primary" style="padding: 12px 32px; font-size: 1rem;">Run Clinical Assessment <i class="fas fa-arrow-right"></i></button>
-                    </div>
-                </form>
+    <div class="page-body">
+        <div class="assessment-steps">
+            <div class="step active" onclick="scrollToSec('sec-1')">
+                <div class="step-circle">1</div>
+                <div class="step-label">Patient Profile</div>
+            </div>
+            <div class="step" onclick="scrollToSec('sec-2')">
+                <div class="step-circle">2</div>
+                <div class="step-label">Symptom Profile</div>
+            </div>
+            <div class="step" onclick="scrollToSec('sec-3')">
+                <div class="step-circle">3</div>
+                <div class="step-label">Clinical History</div>
             </div>
         </div>
-    </main>
 
+        <form id="prediction-form" class="form-container">
+            <div class="form-main">
+                <!-- Section 1: Patient Details -->
+                <div class="form-section" id="sec-1">
+                    <div class="section-header">
+                        <i class="fas fa-user-circle"></i>
+                        <h2>Basic Patient Profile</h2>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Full Patient Name</label>
+                            <input type="text" id="full-name" placeholder="Enter patient's legal name" required>
+                            <span class="error-msg">Patient name is required.</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Age (Years)</label>
+                            <input type="number" id="age" placeholder="e.g. 45" min="1" max="120" required>
+                            <span class="error-msg">Valid age is required.</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Blood Group</label>
+                            <select id="blood-group">
+                                <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                                <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Biological Sex</label>
+                            <div style="display:flex; gap:20px;">
+                                <label style="display:flex; align-items:center; gap:8px; font-weight:500; font-size:0.9rem; text-transform:none;">
+                                    <input type="radio" name="gender" value="Male" style="width:auto;"> Male
+                                </label>
+                                <label style="display:flex; align-items:center; gap:8px; font-weight:500; font-size:0.9rem; text-transform:none;">
+                                    <input type="radio" name="gender" value="Female" style="width:auto;"> Female
+                                </label>
+                            </div>
+                            <span class="error-msg" id="gender-error">Please select a gender.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Vitals & Symptoms -->
+                <div class="form-section" id="sec-2">
+                    <div class="section-header">
+                        <i class="fas fa-heart-pulse"></i>
+                        <h2>Diagnostic Indicators & Vitals</h2>
+                    </div>
+                    <div class="form-grid vitals">
+                        <div class="form-group"><label>Height (cm)</label><input type="number" id="height" placeholder="170"></div>
+                        <div class="form-group"><label>Weight (kg)</label><input type="number" id="weight" placeholder="70"></div>
+                        <div class="form-group"><label>Body Mass Index (BMI)</label><input type="text" id="bmi" readonly placeholder="Auto-calculated"></div>
+                        <div class="form-group"><label>Heart Rate (bpm)</label><input type="number" id="heart-rate" placeholder="72"></div>
+                        <div class="form-group"><label>BP (Systolic)</label><input type="number" id="bp-sys" placeholder="120"></div>
+                        <div class="form-group"><label>BP (Diastolic)</label><input type="number" id="bp-dia" placeholder="80"></div>
+                        <div class="form-group"><label>Blood Sugar (mg/dL)</label><input type="number" id="blood-sugar" placeholder="100"></div>
+                    </div>
+
+                    <div class="symptom-selector">
+                        <div class="symptom-group">
+                            <span class="symptom-group-label">Common Systemic Symptoms</span>
+                            <div class="pills-container">
+                                <div class="pill">Fever</div><div class="pill">Fatigue</div><div class="pill">Weight Loss</div>
+                                <div class="pill">Chills</div><div class="pill">Sweating</div><div class="pill">Headache</div>
+                            </div>
+                        </div>
+                        <div class="symptom-group">
+                            <span class="symptom-group-label">Respiratory & Pain</span>
+                            <div class="pills-container">
+                                <div class="pill">Cough</div><div class="pill">Breathlessness</div><div class="pill">Chest Pain</div>
+                                <div class="pill">Joint Pain</div><div class="pill">Back Pain</div><div class="pill">Phlegm</div>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top:20px;">
+                            <label>Detailed Symptom Description (Hindi/Marathi supported)</label>
+                            <textarea id="symptom-nlp-input" placeholder="e.g. 'Patient has severe chest pain and breathlessness' or 'मरीज को तेज बुखार और थकान है'…" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Clinical History -->
+                <div class="form-section" id="sec-3">
+                    <div class="section-header">
+                        <i class="fas fa-file-invoice-medical"></i>
+                        <h2>Clinical Context</h2>
+                    </div>
+                    <div class="form-grid">
+                        <div class="question-item" style="margin-bottom:0;"><label><input type="checkbox" id="hist-heart"> History of Cardiovascular Issues</label></div>
+                        <div class="question-item" style="margin-bottom:0;"><label><input type="checkbox" id="hist-diabetes"> Known Diabetic Patient</label></div>
+                        <div class="question-item" style="margin-bottom:0; grid-column: span 2;"><label><input type="checkbox" id="hist-surgery"> Previous Major Surgeries</label></div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-back" id="btn-clear"><i class="fas fa-rotate-left"></i> Reset Form</button>
+                    <button type="submit" class="btn-primary" id="btn-submit">Run Clinical Assessment <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- AI Sidebar -->
+            <div class="ai-sidebar">
+                <div class="insight-card">
+                    <div class="insight-header">
+                        <i class="fas fa-microchip"></i>
+                        <h3>Real-time AI Insights</h3>
+                    </div>
+                    <div id="insight-content">
+                        <div class="insight-placeholder">Select symptoms to see real-time diagnostic probabilities...</div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; padding: 20px; background: var(--clr-accent-dim); border-radius: var(--radius-md); border: 1px dashed var(--clr-accent);">
+                    <h4 style="font-size:0.8rem; margin-bottom:8px; color:var(--clr-accent);">Clinical Tip:</h4>
+                    <p style="font-size:0.78rem; opacity:0.8; line-height:1.5;">Providing multilingual detailed notes improves prediction confidence significantly.</p>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Refinement Modal -->
     <div id="refinement-modal" class="modal">
         <div class="modal-content">
-            <h3><i class="fas fa-robot"></i> AI Refinement Required</h3>
-            <p style="color:var(--clr-text-mid); margin-bottom: 20px;">The AI detected overlapping probabilities. Please clarify to improve accuracy:</p>
+            <h3><i class="fas fa-shield-virus"></i> AI Refinement Alert</h3>
+            <p style="color:var(--clr-text-mid); margin-bottom: 20px;">The diagnostic model detected overlapping indicators. Please specify these additional factors:</p>
             <div id="question-list"></div>
             <div class="modal-actions">
-                <button type="button" class="btn-view" onclick="closeRefinement()">Cancel</button>
-                <button type="button" class="btn-primary" onclick="submitRefinement()">Submit & Finalize</button>
+                <button type="button" class="btn-back" onclick="closeRefinement()">Cancel</button>
+                <button type="button" class="btn-primary" id="btn-modal-submit" onclick="submitRefinement()">Submit & Finalize</button>
             </div>
         </div>
     </div>
-    
+
     <script src="/static/nav.js"></script>
     <script>
-        async function submitRefinement() {
-            try {
-                const btn = event.target;
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizing...';
-                
-                const newSymptoms = [];
-                document.querySelectorAll('.refine-q:checked').forEach(cb => { newSymptoms.push(cb.dataset.name); });
-                
-                if(newSymptoms.length > 0) {
-                    const activeSymptoms = Array.from(document.querySelectorAll('.pill.active')).map(p => p.innerText.trim());
-                    const allSymptoms = [...activeSymptoms, ...newSymptoms].join(". ");
-                    window.location.href = '/result';
-                    return;
+        /**
+         * Clinical Diagnostic Logic for Pharmacian.
+         * Handles Step navigation, BMI, AI Prediction, and Refinement flow.
+         */
+
+        // 1. MOCK THE ELECTRON BRIDGE IF IN BROWSER TEST MODE
+        if (!window.pharmacianDB) {
+            console.warn("[Pharmacian] Browser mode detected. Injecting Mock Database Bridge.");
+            window.pharmacianDB = {
+                insertPatient: async (data) => {
+                    console.log("[MockDB] Patient Inserted:", data);
+                    return { ok: true, data: { id: Math.floor(Math.random() * 1000) } };
+                },
+                insertPrediction: async (pid, data) => {
+                    console.log("[MockDB] Prediction Saved for PID", pid, data);
+                    return { ok: true };
                 }
-                window.location.href = '/result';
-            } catch(e) {
-                console.error(e);
-                window.location.href = '/result';
+            };
+        }
+
+        // 2. Global State
+        let CURRENT_ASSESSMENT_CONTEXT = null;
+        const form = document.getElementById('prediction-form');
+
+        // 3. UI Helpers
+        function scrollToSec(id) { document.getElementById(id).scrollIntoView({ behavior: 'smooth' }); }
+
+        // BMI Logic
+        const hIn = document.getElementById('height'), wIn = document.getElementById('weight'), bmiIn = document.getElementById('bmi');
+        function computeBMI() {
+            const h = parseFloat(hIn.value), w = parseFloat(wIn.value);
+            if (h > 0 && w > 0) bmiIn.value = (w / ((h / 100) ** 2)).toFixed(1);
+            else bmiIn.value = '';
+        }
+        hIn.addEventListener('input', computeBMI); wIn.addEventListener('input', computeBMI);
+
+        // Pills
+        document.querySelectorAll('.pill').forEach(p => {
+            p.addEventListener('click', () => { p.classList.toggle('active'); debouncedPredict(); });
+        });
+
+        // 4. Persistence & Redirection
+        async function finalizeAssessment(patientId, patientData, vitalData, aiResult, activeSymptoms) {
+            console.log("[Pharmacian] Finalizing flow...", { patientId, status: aiResult.status });
+
+            // DB Persistence
+            if (window.pharmacianDB && patientId) {
+                try {
+                    const top = aiResult.predictions[0] || {};
+                    await window.pharmacianDB.insertPrediction(patientId, {
+                        risk_level: (top.probability >= 70) ? 'High' : (top.probability >= 30) ? 'Medium' : 'Low',
+                        primary_disease: top.disease || "Unknown",
+                        confidence: top.probability || 0,
+                        raw_payload: JSON.stringify(aiResult),
+                        bmi: vitalData.bmi,
+                        blood_pressure: (vitalData.bp_sys && vitalData.bp_dia) ? `${vitalData.bp_sys}/${vitalData.bp_dia}` : null,
+                        blood_sugar: vitalData.blood_sugar, heart_rate: vitalData.heart_rate,
+                        symptoms: activeSymptoms.map(s => ({ name: s }))
+                    });
+                } catch (e) { console.error("DB Error:", e); }
             }
+
+            // Session Link
+            sessionStorage.setItem('latestAssessment', JSON.stringify({ patient: patientData, vitals: vitalData, result: aiResult }));
+            window.location.href = '/result';
+        }
+
+        // 5. Refinement Logic
+        function showRefinementModal(patientId, patientData, vitalData, aiResult, activeSymptoms, originalSymptoms) {
+            CURRENT_ASSESSMENT_CONTEXT = { patientId, patientData, vitalData, activeSymptoms, originalSymptoms };
+            const qList = document.getElementById('question-list'); qList.innerHTML = "";
+            (aiResult.questions || []).forEach(q => {
+                const div = document.createElement('div'); div.className = 'question-item';
+                div.innerHTML = `<label><input type="checkbox" class="refine-q" data-name="${q.name}"> Have you experienced <strong>${q.name}</strong>?</label>`;
+                qList.appendChild(div);
+            });
+            document.getElementById('refinement-modal').style.display = "block";
+        }
+        function closeRefinement() { document.getElementById('refinement-modal').style.display = "none"; CURRENT_ASSESSMENT_CONTEXT = null; }
+
+        async function submitRefinement() {
+            if (!CURRENT_ASSESSMENT_CONTEXT) return;
+            const ctx = CURRENT_ASSESSMENT_CONTEXT;
+            const btn = document.getElementById('btn-modal-submit');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizing Pass...';
+
+            try {
+                const refined = []; document.querySelectorAll('.refine-q:checked').forEach(c => refined.push(c.dataset.name));
+                const symptoms = [ctx.originalSymptoms, refined.join(", ")].filter(Boolean).join(". ");
+                
+                const res = await fetch('/predict', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symptoms, age: ctx.patientData.age, gender: (ctx.patientData.gender === 'Male' ? 0 : 1), weight: ctx.vitalData.weight, is_refined: true })
+                });
+                const result = await res.json();
+                await finalizeAssessment(ctx.patientId, ctx.patientData, ctx.vitalData, result, ctx.activeSymptoms);
+            } catch (e) { window.location.href = '/result'; }
+        }
+
+        // 6. Form Submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+
+            try {
+                const activeS = Array.from(document.querySelectorAll('.pill.active')).map(p => p.innerText.trim());
+                const profile = [activeS.join(", "), document.getElementById('symptom-nlp-input').value].filter(Boolean).join(". ");
+                const patientData = { 
+                    name: document.getElementById('full-name').value, 
+                    age: parseInt(document.getElementById('age').value), 
+                    gender: (document.querySelector('input[name="gender"]:checked')?.value || 'Male'),
+                    blood_group: document.getElementById('blood-group').value
+                };
+                const vitalData = { 
+                    bp_sys: document.getElementById('bp-sys').value, 
+                    bp_dia: document.getElementById('bp-dia').value, 
+                    bmi: bmiIn.value, weight: wIn.value || 70,
+                    blood_sugar: document.getElementById('blood-sugar').value, heart_rate: document.getElementById('heart-rate').value
+                };
+
+                const dbRes = await window.pharmacianDB.insertPatient({ ...patientData, ...vitalData });
+                const pid = dbRes.ok ? dbRes.data.id : null;
+
+                const response = await fetch('/predict', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symptoms: profile, age: patientData.age, gender: (patientData.gender === 'Male' ? 0 : 1), weight: vitalData.weight, is_refined: false })
+                });
+                const aiResult = await response.json();
+
+                if (aiResult.status === 'success') {
+                    await finalizeAssessment(pid, patientData, vitalData, aiResult, activeS);
+                } else {
+                    showRefinementModal(pid, patientData, vitalData, aiResult, activeS, profile);
+                    btn.disabled = false; btn.innerHTML = 'Run Clinical Assessment <i class="fas fa-arrow-right"></i>';
+                }
+            } catch (err) { btn.disabled = false; alert("Clinical System Busy. Please try again."); }
+        });
+
+        // Live Prediction
+        let pTimeout = null;
+        function debouncedPredict() { clearTimeout(pTimeout); pTimeout = setTimeout(runLive, 800); }
+        document.getElementById('symptom-nlp-input').addEventListener('input', debouncedPredict);
+
+        async function runLive() {
+            const activeS = Array.from(document.querySelectorAll('.pill.active')).map(p => p.innerText.trim());
+            const profile = [activeS.join(", "), document.getElementById('symptom-nlp-input').value].filter(Boolean).join(". ");
+            if (!profile.trim()) return;
+            try {
+                const res = await fetch('/predict', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ symptoms: profile, age: 30, gender: 0, weight: 70, is_refined: false })
+                });
+                const ai = await res.json();
+                if (ai.predictions) {
+                    document.getElementById('insight-content').innerHTML = ai.predictions.slice(0, 4).map(p => `
+                        <div class="prediction-item"><span class="pred-name">${p.disease}</span><span class="pred-prob">${p.probability}%</span></div>
+                    `).join('');
+                }
+            } catch (e) {}
         }
     </script>
-<script>
-    function scrollToSec(id) {
-        document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // Scroll Spy (Improved)
-    const sections = document.querySelectorAll('.form-section');
-    const steps = document.querySelectorAll('.step');
-
-    function updateScrollSpy() {
-        let current = '';
-        const offset = 300;
-
-        sections.forEach(sec => {
-            const rect = sec.getBoundingClientRect();
-            if (rect.top <= offset && rect.bottom >= offset) {
-                current = sec.id;
-            }
-        });
-
-        steps.forEach((step, idx) => {
-            step.classList.remove('active');
-            if (`sec-${idx + 1}` === current) {
-                step.classList.add('active');
-            }
-        });
-    }
-
-    let ticking = false;
-    window.addEventListener('scroll', () => {
-        if (!ticking) {
-            requestAnimationFrame(() => {
-                updateScrollSpy();
-                ticking = false;
-            });
-            ticking = true;
-        }
-    });
-
-    // Pills
-    document.querySelectorAll('.pill').forEach(pill => {
-        pill.addEventListener('click', () => {
-            pill.classList.toggle('active');
-        });
-    });
-
-    // BMI Fix
-    const hInput = document.getElementById('height');
-    const wInput = document.getElementById('weight');
-    const bmiInput = document.getElementById('bmi');
-
-    function calculateBMI() {
-        const h = parseFloat(hInput.value);
-        const w = parseFloat(wInput.value);
-
-        if (h > 0 && w > 0) {
-            const bmi = w / ((h / 100) ** 2);
-            bmiInput.value = bmi.toFixed(1);
-        } else {
-            bmiInput.value = '';
-        }
-    }
-
-    hInput.addEventListener('input', calculateBMI);
-    wInput.addEventListener('input', calculateBMI);
-
-    // Validation
-    const form = document.getElementById('prediction-form');
-    const nameInput = document.getElementById('full-name');
-    const ageInput = document.getElementById('age');
-
-    function validateForm() {
-        let isValid = true;
-
-        if (!nameInput.value.trim()) {
-            nameInput.classList.add('error');
-            nameInput.nextElementSibling.style.display = 'block';
-            isValid = false;
-        } else {
-            nameInput.classList.remove('error');
-            nameInput.nextElementSibling.style.display = 'none';
-        }
-
-        if (!ageInput.value || ageInput.value < 1) {
-            ageInput.classList.add('error');
-            ageInput.nextElementSibling.style.display = 'block';
-            isValid = false;
-        } else {
-            ageInput.classList.remove('error');
-            ageInput.nextElementSibling.style.display = 'none';
-        }
-
-        const genderSelected = document.querySelector('input[name="gender"]:checked');
-        if (!genderSelected) {
-            document.getElementById('gender-error').style.display = 'block';
-            isValid = false;
-        } else {
-            document.getElementById('gender-error').style.display = 'none';
-        }
-
-        const activeSymptoms = Array.from(document.querySelectorAll('.pill.active')).map(p => p.innerText.trim());
-        const nlpInputEl = document.getElementById('symptom-nlp-input');
-        const nlpText = nlpInputEl ? nlpInputEl.value : "";
-
-        if (activeSymptoms.length === 0 && !nlpText.trim()) {
-            alert("Please provide symptoms.");
-            isValid = false;
-        }
-
-        return isValid;
-    }
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        if (!validateForm()) {
-            scrollToSec('sec-1');
-            return;
-        }
-
-        const btn = document.getElementById('btn-submit');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-        try {
-            const activeSymptoms = Array.from(document.querySelectorAll('.pill.active')).map(p => p.innerText.trim());
-            const nlpInputEl = document.getElementById('symptom-nlp-input');
-            const nlpText = nlpInputEl ? nlpInputEl.value : "";
-
-            const fullSymptomaticProfile = [
-                activeSymptoms.join(", "),
-                nlpText.trim()
-            ].filter(Boolean).join(". ");
-
-            const patientData = {
-                name: nameInput.value.trim(),
-                age: parseInt(ageInput.value),
-                gender: document.querySelector('input[name="gender"]:checked').value,
-                blood_group: document.getElementById('blood-group').value
-            };
-
-            const genderMap = { Male: 0, Female: 1, Other: 2 };
-
-            const vitalData = {
-                bp_sys: document.getElementById('bp-sys').value || null,
-                bp_dia: document.getElementById('bp-dia').value || null,
-                blood_sugar: document.getElementById('blood-sugar').value || null,
-                bmi: bmiInput.value || null,
-                heart_rate: document.getElementById('heart-rate').value || null
-            };
-
-            let patientId = null;
-
-            if (window.pharmacianDB) {
-                const result = await window.pharmacianDB.insertPatient({
-                    ...patientData,
-                    ...vitalData
-                });
-
-                if (result.ok) {
-                    patientId = result.data.id;
-                }
-            }
-
-            const response = await fetch('/predict', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    symptoms: fullSymptomaticProfile,
-                    age: patientData.age,
-                    gender: genderMap[patientData.gender] ?? 0,
-                    weight: document.getElementById('weight').value || 70,
-                    h_hyper: document.getElementById('hist-heart').checked ? 1 : 0,
-                    h_diabe: document.getElementById('hist-diabetes').checked ? 1 : 0,
-                    h_asthma: 0,
-                    h_allergy: 0,
-                    h_surgery: document.getElementById('hist-surgery').checked ? 1 : 0,
-                    medications: [],
-                    notes: "",
-                    is_refined: false
-                })
-            });
-
-            if (!response.ok) throw new Error("AI Engine unreachable");
-
-            const aiResult = await response.json();
-
-            if (aiResult.status === 'success') {
-                await finalizeAssessment(patientId, patientData, vitalData, aiResult, activeSymptoms);
-            } else if (aiResult.status === 'refine') {
-                showRefinementModal(patientId, patientData, vitalData, aiResult, activeSymptoms, fullSymptomaticProfile);
-                btn.disabled = false;
-                btn.innerHTML = 'Run Clinical Assessment <i class="fas fa-arrow-right"></i>';
-            }
-
-        } catch (err) {
-            alert("Error: " + err.message);
-            btn.disabled = false;
-            btn.innerHTML = 'Run Clinical Assessment <i class="fas fa-arrow-right"></i>';
-        }
-    });
-
-    // Safe Modal Rendering (XSS FIX)
-    function showRefinementModal(patientId, patientData, vitalData, aiResult, activeSymptoms, originalSymptoms) {
-        const modal = document.getElementById('refinement-modal');
-        const qList = document.getElementById('question-list');
-        qList.innerHTML = "";
-
-        aiResult.questions.forEach(q => {
-            const div = document.createElement('div');
-            div.className = 'question-item';
-
-            const label = document.createElement('label');
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.className = 'refine-q';
-            input.dataset.name = q.name;
-
-            const strong = document.createElement('strong');
-            strong.textContent = q.name;
-
-            label.appendChild(input);
-            label.append(" Have you experienced ");
-            label.appendChild(strong);
-            label.append("?");
-
-            div.appendChild(label);
-            qList.appendChild(div);
-        });
-
-        modal.style.display = "block";
-    }
-
-    function closeRefinement() {
-        document.getElementById('refinement-modal').style.display = "none";
-    }
-
-    async function finalizeAssessment(patientId, patientData, vitalData, aiResult, activeSymptoms) {
-        if (window.pharmacianDB && patientId) {
-            const primaryDisease = aiResult.predictions[0]?.disease || "Unknown";
-            const pScore = aiResult.predictions[0]?.probability || 0;
-
-            const riskLevel = pScore >= 70 ? 'High' : pScore >= 30 ? 'Medium' : 'Low';
-
-            await window.pharmacianDB.insertPrediction(patientId, {
-                risk_level: riskLevel,
-                primary_disease: primaryDisease,
-                confidence: pScore,
-                raw_payload: JSON.stringify(aiResult),
-                bmi: vitalData.bmi,
-                blood_pressure: (vitalData.bp_sys && vitalData.bp_dia)
-                    ? `${vitalData.bp_sys}/${vitalData.bp_dia}`
-                    : null,
-                blood_sugar: vitalData.blood_sugar,
-                heart_rate: vitalData.heart_rate,
-                symptoms: activeSymptoms.map(s => ({ name: s }))
-            });
-        }
-
-        sessionStorage.setItem('latestAssessment', JSON.stringify({
-            patient: patientData,
-            vitals: vitalData,
-            result: aiResult
-        }));
-
-        window.location.href = '/result';
-    }
-
-    document.getElementById('btn-clear').addEventListener('click', () => {
-        form.reset();
-        document.querySelectorAll('.pill.active').forEach(p => p.classList.remove('active'));
-        bmiInput.value = '';
-        document.querySelectorAll('.error').forEach(e => e.classList.remove('error'));
-        document.querySelectorAll('.error-msg').forEach(e => e.style.display = 'none');
-        if (typeof clearNLP === 'function') clearNLP();
-        scrollToSec('sec-1');
-    });
-</script>
 </body>
 </html>

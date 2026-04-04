@@ -498,7 +498,7 @@ function verifyUser(username, password) {
 function updatePassword(userId, newPassword) {
   try {
     const { hash, salt } = hashPassword(newPassword);
-    const result = getDb().prepare("UPDATE users SET password_hash = ?, salt = ? WHERE id = ?")
+    const result = getDb().prepare("UPDATE users SET password_hash = ?, salt = ?, needs_password_change = 0 WHERE id = ?")
       .run(hash, salt, userId);
     return result.changes > 0;
   } catch (err) {
@@ -512,7 +512,7 @@ function updatePassword(userId, newPassword) {
 function createUser(username, password, role = "clinician") {
   try {
     const { hash, salt } = hashPassword(password);
-    const result = getDb().prepare("INSERT INTO users (username, password_hash, salt, role) VALUES (?, ?, ?, ?)")
+    const result = getDb().prepare("INSERT INTO users (username, password_hash, salt, role, needs_password_change) VALUES (?, ?, ?, ?, 1)")
       .run(username, hash, salt, role);
     return result.lastInsertRowid;
   } catch (err) {

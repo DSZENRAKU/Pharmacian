@@ -1,0 +1,10 @@
+flask>=2.0,<3
+scikit-learn>=1.0
+pandas>=1.3
+numpy>=1.21
+joblib>=1.1
+python-dotenv>=1.0
+better-sqlite3-binary==0.0.0   # placeholder: actual DB driver used by Electron (Node) — keep for reference
+
+# Optional (for model ops)
+black==24.3.0

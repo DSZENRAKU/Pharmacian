@@ -195,20 +195,76 @@ document.addEventListener("DOMContentLoaded", () => {
                 card.className = "glass-panel disease-module";
                 card.style.padding = "1.5rem";
                 card.style.marginBottom = "1rem";
-                card.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <div>
-                            <h4 style="font-weight: 700; color: #fff;">${idx + 1}. ${p.disease}</h4>
-                            <span style="font-size: 0.7rem; font-weight: 700; color: ${confColor}; letter-spacing: 1px;">${confTag} DIAGNOSIS</span>
-                        </div>
-                        <span class="cond-prob" style="background: var(--accent-glow); color: var(--accent); padding: 2px 10px; border-radius: 10px;">${p.probability}% Match</span>
-                    </div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px;">${p.info.description}</p>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem;">
-                        <div class="panel-sect"><strong>🧩 Symptoms:</strong><br>${p.info.common_symptoms}</div>
-                        <div class="panel-sect"><strong>🦠 Causes:</strong><br>${p.info.causes}</div>
-                    </div>
-                `;
+
+                const header = document.createElement("div");
+                header.style.display = "flex";
+                header.style.justifyContent = "space-between";
+                header.style.alignItems = "center";
+                header.style.marginBottom = "10px";
+
+                const left = document.createElement("div");
+                const title = document.createElement("h4");
+                title.style.fontWeight = "700";
+                title.style.color = "#fff";
+                title.textContent = `${idx + 1}. ${p.disease}`;
+                const tagSpan = document.createElement("span");
+                tagSpan.style.fontSize = "0.7rem";
+                tagSpan.style.fontWeight = "700";
+                tagSpan.style.color = confColor;
+                tagSpan.style.letterSpacing = "1px";
+                tagSpan.textContent = `${confTag} DIAGNOSIS`;
+                left.appendChild(title);
+                left.appendChild(tagSpan);
+
+                const right = document.createElement("span");
+                right.className = "cond-prob";
+                right.style.background = "var(--accent-glow)";
+                right.style.color = "var(--accent)";
+                right.style.padding = "2px 10px";
+                right.style.borderRadius = "10px";
+                right.textContent = `${p.probability}% Match`;
+
+                header.appendChild(left);
+                header.appendChild(right);
+
+                const desc = document.createElement("p");
+                desc.style.fontSize = "0.85rem";
+                desc.style.color = "var(--text-muted)";
+                desc.style.lineHeight = "1.5";
+                desc.style.marginBottom = "10px";
+                desc.textContent = p.info && p.info.description ? p.info.description : "";
+
+                const grid = document.createElement("div");
+                grid.style.display = "grid";
+                grid.style.gridTemplateColumns = "1fr 1fr";
+                grid.style.gap = "10px";
+                grid.style.fontSize = "0.8rem";
+
+                const symptomsDiv = document.createElement("div");
+                symptomsDiv.className = "panel-sect";
+                const symStrong = document.createElement("strong");
+                symStrong.textContent = "🧩 Symptoms:";
+                symptomsDiv.appendChild(symStrong);
+                const symText = document.createElement("div");
+                symText.textContent = p.info && p.info.common_symptoms ? p.info.common_symptoms : "";
+                symptomsDiv.appendChild(symText);
+
+                const causesDiv = document.createElement("div");
+                causesDiv.className = "panel-sect";
+                const cauStrong = document.createElement("strong");
+                cauStrong.textContent = "🦠 Causes:";
+                causesDiv.appendChild(cauStrong);
+                const cauText = document.createElement("div");
+                cauText.textContent = p.info && p.info.causes ? p.info.causes : "";
+                causesDiv.appendChild(cauText);
+
+                grid.appendChild(symptomsDiv);
+                grid.appendChild(causesDiv);
+
+                card.appendChild(header);
+                card.appendChild(desc);
+                card.appendChild(grid);
+
                 View.refs.predictionsList.appendChild(card);
             });
         },
@@ -219,11 +275,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 risks.forEach(r => {
                     const rCard = document.createElement("div");
                     rCard.className = `risk-item-main ${r.risk.toLowerCase()}`;
-                    rCard.innerHTML = `
-                        <div class="risk-info"><strong>${r.condition}</strong> (${r.risk} Risk)</div>
-                        <div class="risk-bar-container"><div class="risk-bar" style="width: ${r.risk === "High" ? "90%" : "50%"}"></div></div>
-                        <p style="font-size: 0.8rem; opacity: 0.7; margin-top: 5px;">${r.note}</p>
-                    `;
+
+                    const info = document.createElement("div");
+                    info.className = "risk-info";
+                    const strong = document.createElement("strong");
+                    strong.textContent = r.condition;
+                    info.appendChild(strong);
+                    info.appendChild(document.createTextNode(` (${r.risk} Risk)`));
+
+                    const barContainer = document.createElement("div");
+                    barContainer.className = "risk-bar-container";
+                    const bar = document.createElement("div");
+                    bar.className = "risk-bar";
+                    bar.style.width = r.risk === "High" ? "90%" : "50%";
+                    barContainer.appendChild(bar);
+
+                    const note = document.createElement("p");
+                    note.style.fontSize = "0.8rem";
+                    note.style.opacity = "0.7";
+                    note.style.marginTop = "5px";
+                    note.textContent = r.note || "";
+
+                    rCard.appendChild(info);
+                    rCard.appendChild(barContainer);
+                    rCard.appendChild(note);
+
                     View.refs.riskListMain.appendChild(rCard);
                 });
             } else {
@@ -233,7 +309,12 @@ document.addEventListener("DOMContentLoaded", () => {
         renderXAI(rationale, consensus) {
             if (rationale && consensus) {
                 View.refs.rationaleCard.classList.remove("hidden");
-                View.refs.rationaleList.innerHTML = rationale.map(s => `<li>${s}</li>`).join("");
+                View.refs.rationaleList.innerHTML = "";
+                rationale.forEach(s => {
+                    const li = document.createElement("li");
+                    li.textContent = s;
+                    View.refs.rationaleList.appendChild(li);
+                });
                 View.refs.consensusScore.innerText = consensus.score;
                 View.refs.consensusStatus.innerText = `${consensus.status} Confidence`;
                 View.refs.consensusStatus.style.background = consensus.status === "High" ? "#00e676" : "#ffab40";
@@ -253,13 +334,24 @@ document.addEventListener("DOMContentLoaded", () => {
             View.refs.medList.innerHTML = "";
             View.refs.medSummary.innerHTML = "";
             if (!list || list.length === 0) {
-                View.refs.medSummary.innerHTML = '<div class="small-muted">No medications recorded.</div>';
+                const placeholder = document.createElement("div");
+                placeholder.className = "small-muted";
+                placeholder.textContent = "No medications recorded.";
+                View.refs.medSummary.appendChild(placeholder);
                 return;
             }
             list.forEach((m, idx) => {
                 const item = document.createElement("div");
                 item.className = "med-item";
-                item.innerHTML = `<div><strong>${m.name}</strong> <span>— Dose: ${m.dose} — ${m.frequency}</span></div>`;
+                const inner = document.createElement("div");
+                const strong = document.createElement("strong");
+                strong.textContent = m.name;
+                inner.appendChild(strong);
+                const span = document.createElement("span");
+                span.textContent = ` — Dose: ${m.dose} — ${m.frequency}`;
+                inner.appendChild(span);
+                item.appendChild(inner);
+
                 const rm = document.createElement("button");
                 rm.className = "med-remove";
                 rm.innerText = "Remove";
@@ -269,7 +361,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const summaryItem = document.createElement("div");
                 summaryItem.className = "med-item";
-                summaryItem.innerHTML = `<div><strong>${m.name}</strong> <span>— Dose: ${m.dose} — ${m.frequency}</span></div>`;
+                const sInner = document.createElement("div");
+                const sStrong = document.createElement("strong");
+                sStrong.textContent = m.name;
+                sInner.appendChild(sStrong);
+                const sSpan = document.createElement("span");
+                sSpan.textContent = ` — Dose: ${m.dose} — ${m.frequency}`;
+                sInner.appendChild(sSpan);
+                summaryItem.appendChild(sInner);
                 View.refs.medSummary.appendChild(summaryItem);
             });
         },
@@ -278,23 +377,52 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         renderReport(data) {
             const profile = Model.state.profile;
-            View.refs.reportProfile.innerHTML = [
+            View.refs.reportProfile.innerHTML = "";
+            [
                 { label: "Age", value: profile.age },
                 { label: "Gender", value: profile.gender === "1" ? "Female" : "Male" },
                 { label: "Weight", value: `${profile.weight} kg` }
-            ].map(i => `<div class="report-item"><span>${i.label}</span><strong>${i.value}</strong></div>`).join("");
+            ].forEach(i => {
+                const node = document.createElement("div");
+                node.className = "report-item";
+                const lbl = document.createElement("span"); lbl.textContent = i.label;
+                const val = document.createElement("strong"); val.textContent = i.value;
+                node.appendChild(lbl);
+                node.appendChild(val);
+                View.refs.reportProfile.appendChild(node);
+            });
 
             const meds = Array.isArray(data.medications) ? data.medications : [];
-            View.refs.reportMeds.innerHTML = meds.length === 0
-                ? '<div class="small-muted">No medications recorded.</div>'
-                : meds.map(m => `<div class="report-item"><span>${m.name}</span><strong>${m.dose}</strong></div>`).join("");
+            View.refs.reportMeds.innerHTML = "";
+            if (meds.length === 0) {
+                const ph = document.createElement("div"); ph.className = "small-muted"; ph.textContent = "No medications recorded.";
+                View.refs.reportMeds.appendChild(ph);
+            } else {
+                meds.forEach(m => {
+                    const node = document.createElement("div"); node.className = "report-item";
+                    const s = document.createElement("span"); s.textContent = m.name;
+                    const b = document.createElement("strong"); b.textContent = m.dose;
+                    node.appendChild(s); node.appendChild(b);
+                    View.refs.reportMeds.appendChild(node);
+                });
+            }
 
             View.refs.reportNotes.textContent = data.notes || "No notes added.";
 
             const risks = Array.isArray(data.risks) ? data.risks : [];
-            View.refs.reportRisks.innerHTML = risks.length === 0
-                ? '<div class="small-muted">No risk flags detected.</div>'
-                : risks.map(r => `<div class="report-item"><span>${r.condition}</span><strong>${r.risk}</strong></div>`).join("");
+            View.refs.reportRisks.innerHTML = "";
+            if (risks.length === 0) {
+                const ph = document.createElement("div"); ph.className = "small-muted"; ph.textContent = "No risk flags detected.";
+                View.refs.reportRisks.appendChild(ph);
+            } else {
+                risks.forEach(r => {
+                    const node = document.createElement("div"); node.className = "report-item";
+                    const s = document.createElement("span"); s.textContent = r.condition;
+                    const b = document.createElement("strong"); b.textContent = r.risk;
+                    node.appendChild(s); node.appendChild(b);
+                    View.refs.reportRisks.appendChild(node);
+                });
+            }
         },
         renderInteractionWarnings(warnings) {
             if (!warnings || warnings.length === 0) {

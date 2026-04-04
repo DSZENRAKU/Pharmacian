@@ -2,6 +2,11 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TRAINING_DATA_PATH = BASE_DIR / "backend" / "data" / "disease-prediction" / "Training.csv"
+MODELS_DIR = BASE_DIR / "saved_models"
+RF_MODEL_PATH = MODELS_DIR / "random_forest.joblib"
+DT_MODEL_PATH = MODELS_DIR / "decision_tree.joblib"
+NB_MODEL_PATH = MODELS_DIR / "naive_bayes.joblib"
+SYMPTOMS_LIST_PATH = MODELS_DIR / "symptoms_list.joblib"
 
 PROFILE_COLS = [
     "history_hypertension",

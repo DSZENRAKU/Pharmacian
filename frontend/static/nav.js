@@ -55,9 +55,15 @@
         if (document.getElementById('pw-change-banner')) return;
         const banner = document.createElement('div');
         banner.id = 'pw-change-banner';
+
+        const isDefaultAdmin = user && user.username === 'admin';
+        const message = isDefaultAdmin 
+            ? 'You are using the default admin password.' 
+            : 'A password change is required for your account.';
+
         banner.innerHTML = `
             <i class="fas fa-shield-halved"></i>
-            <strong>Security Notice:</strong> You are using the default admin password.
+            <strong>Security Notice:</strong> ${message}
             Please change it immediately.
             <a href="/settings" style="
                 margin-left:12px; background:#fff; color:#b45309;
@@ -85,6 +91,42 @@
         if (contentArea) {
             contentArea.style.paddingTop = `calc(${contentArea.style.paddingTop || '0px'} + 50px)`;
         }
+    }
+
+    // ── Mobile Navigation ──────────────────────────────────────────────────
+    function setupMobileNav() {
+        const topBar = document.querySelector('.top-bar');
+        const sidebar = document.querySelector('.sidebar');
+        if (!topBar || !sidebar) return;
+
+        // 1. Create toggle if missing
+        let toggle = document.querySelector('.mobile-toggle');
+        if (!toggle) {
+            toggle = document.createElement('div');
+            toggle.className = 'mobile-toggle';
+            toggle.innerHTML = '<i class="fas fa-bars"></i>';
+            topBar.prepend(toggle);
+        }
+
+        // 2. Toggle sidebar
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('mobile-open');
+        });
+
+        // 3. Close when clicking outside
+        document.addEventListener('click', (e) => {
+            if (sidebar.classList.contains('mobile-open') && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                sidebar.classList.remove('mobile-open');
+            }
+        });
+
+        // 4. Close when clicking a link
+        sidebar.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-open');
+            });
+        });
     }
 
     // ── Main init ───────────────────────────────────────────────────────────
@@ -140,8 +182,8 @@
             // 4. Check if first login (needs password change)
             if (window.pharmacianAuth.needsPasswordChange) {
                 try {
-                    const needsChange = await window.pharmacianAuth.needsPasswordChange();
-                    if (needsChange) {
+                    const res = await window.pharmacianAuth.needsPasswordChange();
+                    if (res && res.ok && res.data) {
                         showPasswordChangeBanner(user);
                     }
                 } catch (_) {}
@@ -167,6 +209,9 @@
         if (window.pharmacianAuth) {
             startIdleWatcher();
         }
+
+        // 7. Setup Mobile Nav
+        setupMobileNav();
     }
 
     if (document.readyState === 'loading') {

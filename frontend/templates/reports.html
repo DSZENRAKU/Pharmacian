@@ -2,11 +2,13 @@
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:5000;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacian | Clinical Reports</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/pdf_report.js"></script>
     <script src="/static/titlebar.js"></script>
     <style>
         body { display: flex; }
@@ -261,55 +263,38 @@
             const r = reportData[idx];
             if (!r) return;
 
-            if (!window.pharmacianPDF) {
-                alert('PDF export is only available in the desktop application.');
+            if (typeof generatePDF !== 'function') {
+                alert('PDF engine not loaded.');
                 return;
             }
 
-            const date = new Date(r.created_at).toLocaleDateString('en-GB', {day:'2-digit', month:'long', year:'numeric'});
-            const riskColor = r.risk_level === 'High' ? '#ef4444' : r.risk_level === 'Medium' ? '#f59e0b' : '#10b981';
+            // Derive risk level string from probability if not directly available
+            const prob = r.confidence || 50; 
+            const level = r.risk_level || (prob >= 70 ? "High" : prob >= 30 ? "Medium" : "Low");
 
-            const htmlContent = `<!DOCTYPE html><html><head>
-                <style>
-                    body { font-family: 'Segoe UI', sans-serif; padding: 48px; color: #0f172a; background: #fff; }
-                    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0284c7; padding-bottom: 20px; margin-bottom: 28px; }
-                    .brand { font-size: 24px; font-weight: 900; text-transform: uppercase; color: #0f172a; letter-spacing: 1px; }
-                    .brand span { color: #0284c7; }
-                    .report-title { font-size: 13px; color: #64748b; margin-top: 4px; }
-                    .section { margin-bottom: 24px; }
-                    .section h3 { font-size: 11px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; }
-                    .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
-                    .row .lbl { color: #64748b; font-weight: 500; }
-                    .row .val { font-weight: 600; color: #0f172a; }
-                    .risk { display: inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 14px; color: ${riskColor}; border: 2px solid ${riskColor}; }
-                    .footer { margin-top: 40px; font-size: 10px; color: #94a3b8; text-align: center; }
-                </style>
-            </head><body>
-                <div class="header">
-                    <div><div class="brand">Pharma<span>cian</span></div><div class="report-title">Clinical Assessment Report</div></div>
-                    <div style="text-align:right;font-size:12px;color:#64748b">Report generated: ${date}</div>
-                </div>
-                <div class="section">
-                    <h3>Patient Information</h3>
-                    <div class="row"><span class="lbl">Full Name</span><span class="val">${r.full_name}</span></div>
-                    <div class="row"><span class="lbl">Age</span><span class="val">${r.age}</span></div>
-                    <div class="row"><span class="lbl">Assessment Date</span><span class="val">${date}</span></div>
-                </div>
-                <div class="section">
-                    <h3>Diagnostic Outcome</h3>
-                    <div class="row"><span class="lbl">Primary Diagnosis</span><span class="val">${r.primary_disease || 'N/A'}</span></div>
-                    <div class="row"><span class="lbl">Risk Classification</span><span class="val"><span class="risk">${r.risk_level}</span></span></div>
-                </div>
-                <div class="footer">Pharmacian Clinical System v2.0 — For Authorised Healthcare Use Only</div>
-            </body></html>`;
+            const reportDataForExport = {
+                patient: {
+                    name:      r.full_name,
+                    age:       r.age,
+                    gender:    r.gender || "Unknown",
+                    patientId: "#PHR-" + (r.id || "0000"),
+                    scanDate:  new Date(r.created_at).toLocaleDateString("en-IN", { year:"numeric", month:"long", day:"numeric" }),
+                },
+                riskScore:   prob,
+                riskLevel:   level,
+                predictions: [
+                    { 
+                        disease:        r.primary_disease || "Unknown", 
+                        probability:    prob, 
+                        riskLevel:      level, 
+                        recommendation: "Clinical follow-up recommended for historical assessment." 
+                    }
+                ],
+                keyFactors:  [],
+                doctorNote:  `Historical report retrieved for ${r.full_name}. This assessment was originally recorded on ${new Date(r.created_at).toLocaleDateString()}.`,
+            };
 
-            const filename = `pharmacian-report-${r.full_name.toLowerCase().replace(/\s+/g,'-')}-${new Date().toISOString().split('T')[0]}.pdf`;
-            const result = await window.pharmacianPDF.savePDF(htmlContent, filename);
-            if (result.ok) {
-                alert(`✅ Report exported to:\n${result.data.path}`);
-            } else {
-                alert(`❌ Export failed: ${result.error}`);
-            }
+            generatePDF(reportDataForExport);
         }
 
         document.addEventListener('DOMContentLoaded', loadReports);

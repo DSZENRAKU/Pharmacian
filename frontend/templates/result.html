@@ -2,6 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:5000;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharmacian | AI Prediction Results</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -259,13 +260,31 @@
         // Dynamic Recommendation Generation
         const top = DISEASES.sort((a,b) => b.prob - a.prob)[0];
         const recMap = {
-            "Heart Disease": "Immediate cardiac evaluation and lifestyle modification advised.",
-            "Hypertension": "Consistent BP monitoring and low-sodium diet recommended.",
-            "Diabetes": "Endocrinology follow-up and HbA1c screening suggested.",
-            "Liver Disease": "Specialist hepatology review and LFT panel advised.",
-            "Kidney Issues": "Renal function monitoring and nephrology consultation recommended."
+            "Heart attack": "Urgent cardiovascular intervention required. Monitor troponin levels and ECG immediately.",
+            "Hypertension": "Consistent BP monitoring, low-sodium DASH diet, and ACE inhibitor review recommended.",
+            "Diabetes": "Endocrinology follow-up, HbA1c screening, and metformin tolerance assessment suggested.",
+            "Chronic cholestasis": "Hepatobiliary imaging (USG/CT) and LFT monitoring every 48 hours is advised.",
+            "Bronchial Asthma": "Pulmonary function tests (Spirometry) and corticosteroid inhaler review recommended.",
+            "Jaundice": "Bilirubin panel (Direct/Indirect) and viral hepatitis screening is strongly advised.",
+            "Tuberculosis": "Sputum culture, chest X-ray, and immediate isolation protocols should be initiated.",
+            "Malaria": "Peripheral blood smear for parasites and antimalarial therapy (ACT) review.",
+            "Dengue": "Platelet count monitoring every 12 hours. Maintain aggressive oral hydration.",
+            "Typhoid": "Widal test/Blood culture and appropriate antibiotic course (Ciprofloxacin/Ceftriaxone)."
         };
-        const recText = `Based on the predictive model, the patient exhibits a ${top.prob}% probability of <strong style="color:#fff;">${top.name}</strong> indicators. ${recMap[top.name] || "Clinical monitoring and further diagnostic confirmation is strongly advised."}`;
+
+        const diseaseInfo = top.info || {};
+        const recText = `
+            <div style="margin-bottom:12px;">
+                <span class="badge" style="background:var(--clr-accent-dim); color:var(--clr-accent); margin-bottom:8px;">Primary Diagnostic Indicator</span>
+                <p style="font-size:1.1rem; color:#fff; font-weight:700;">${top.name} (${top.prob}% Probability)</p>
+            </div>
+            <p style="color:var(--clr-text-mid); line-height:1.6;">
+                <strong>Clinical Advisory:</strong> ${recMap[top.name] || "Detailed clinical observation and further diagnostic confirmation is strongly advised."}
+            </p>
+            <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--clr-border); font-size:0.85rem;">
+                <strong style="color:var(--clr-accent);">OTC / Immediate Action:</strong> ${diseaseInfo.otc || "Rest and hydration."}
+            </div>
+        `;
         document.getElementById('rec-text').innerHTML = recText;
     }
     
@@ -443,12 +462,12 @@
     function handleDownloadPDF() {
         // Build the report data object from the page's live data
         const recommendations = {
-            "Heart Disease":  "Immediate cardiology referral advised. ECG and lipid panel within 7 days.",
-            "Hypertension":   "Blood pressure monitoring, lifestyle modification, medication review.",
-            "Diabetes":       "HbA1c test, dietary counselling, and endocrinology follow-up.",
-            "Liver Disease":  "LFT panel, ultrasound abdomen, hepatology review.",
-            "Kidney Issues":  "Renal function panel, urine analysis, nephrology consultation.",
-            "Cancer Risk":    "Standard cancer screening per age and gender guidelines."
+            "Heart attack": "Urgent cardiovascular intervention required. Specialist referral advised.",
+            "Hypertension":   "Blood pressure monitoring, DASH diet, and medication review.",
+            "Diabetes":       "HbA1c test, dietary counselling, and glucose monitoring.",
+            "Jaundice":       "Liver function panel and viral screening recommended.",
+            "Tuberculosis":   "Chest X-ray and sputum analysis required.",
+            "Asthma":         "Pulmonary function tests and inhaler review.",
         };
 
         // Derive risk level string from OVERALL_SCORE
