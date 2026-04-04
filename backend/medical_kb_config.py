@@ -67,9 +67,25 @@ DISEASE_PANEL_INFO = {
 
 # Clinical Research Simulation DB
 RESEARCH_DB = {
-    "chest pain": "Clinical literature associates persistent chest pain with acute myocardial infarction or severe esophageal reflux.",
-    "fever": "Systematic reviews indicate fever exceeding 48 hours requires investigation for malaria or viral sepsis.",
+    "fever": "Clinical studies show fever above 103°F for 3+ days warrants immediate evaluation. Common viral etiologies include influenza and COVID-19.",
+    "chest pain": "Chest pain combined with shortness of breath has cardiac origin in ~30% of emergency presentations. Rule out ACS first.",
     "sneezing": "Commonly linked to seasonal allergens or acute rhinitis.",
     "rash": "Dermatological patterns suggest fungal etiologies or drug reactions depending on morphology.",
+    "headache": "Recurrent headaches combined with visual disturbances require neurological assessment to rule out migraines or hypertension.",
+    "nausea": "Nausea without localized abdominal pain is often self-limiting, frequently linked to viral gastroenteritis or foodborne illness.",
+    "vomiting": "Severe vomiting leading to dehydration may require IV fluids. Monitor electrolytes closely.",
+    "breathlessness": "Dyspnea is a key marker for cardiopulmonary distress, including COPD exacerbations and congestive heart failure.",
+    "dizziness": "Vertigo and dizziness often stem from benign paroxysmal positional vertigo (BPPV) or orthostatic hypotension.",
+    "muscle aches": "Myalgia is highly correlative with systemic viral infections like influenza, or statin-induced myopathy.",
+    "sore throat": "Pharyngitis is predominantly viral, though Group A Streptococcus accounts for 10-15% of adult cases.",
+    "chills": "Rigors typically accompany abrupt temperature spikes due to bacteremia or severe viral illness.",
+    "abdominal pain": "Right lower quadrant pain necessitates ruling out appendicitis, while upper quadrants suggest biliary or gastric issues.",
+    "cold": "Upper respiratory infections generally resolve within 7-10 days with symptomatic management.",
+    "diarrhea": "Acute diarrhea is most often infective. Rehydration is the primary clinical intervention.",
+    "constipation": "Chronic constipation in older adults may signify functional bowel disorders or medication side effects.",
+    "itching": "Pruritus without visible rash requires investigation into hepatic or renal function.",
+    "joint pain": "Arthralgia in multiple joints often points towards rheumatoid arthritis or post-viral inflammatory response.",
+    "fatigue": "Chronic fatigue lasting >6 months requires comprehensive assessment for thyroid dysfunction, anemia, or CFS.",
+    "cough": "A persistent cough >8 weeks is defined as chronic and may require spirometry or chest radiography.",
     "default": "Research suggests these symptoms correlate with common inflammatory or viral conditions.",
 }

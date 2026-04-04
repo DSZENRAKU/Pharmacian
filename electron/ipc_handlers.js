@@ -104,14 +104,41 @@ function registerIpcHandlers() {
   // ── Patients ──────────────────────────────────────────────────────────────
   handle("db:insertPatient",     (data)                    => db.insertPatient(data));
   handle("db:getAllPatients",    (page, limit, filters)     => db.getAllPatients(page, limit, filters));
+  handle("db:getPatients",       (filters)                  => db.getPatients(filters));
   handle("db:getPatientById",   (id)                       => db.getPatientById(id));
   handle("db:updatePatient",    (id, data)                 => db.updatePatient(id, data));
-  handle("db:deletePatient",    (id)                       => db.deletePatient(id));
+  handle("db:deletePatient",    (id)                       => db.softDeletePatient(id));
 
   // ── Predictions ───────────────────────────────────────────────────────────
-  handle("db:insertPrediction",      (patientId, predData) => db.insertPrediction(patientId, predData));
+  handle("db:insertPrediction",      (patientId, predData) => {
+      const result = db.insertPrediction(patientId, predData);
+      
+      // Auto-alert for high risk
+      if (predData.risk_level === 'High') {
+          const allWindows = BrowserWindow.getAllWindows();
+          allWindows.forEach(win => {
+              win.webContents.send('alert:highRisk', {
+                  disease: predData.primary_disease,
+                  confidence: predData.confidence,
+                  patientId: patientId
+              });
+          });
+          
+          // OS notification
+          if (Notification.isSupported()) {
+              new Notification({
+                  title: '⚠️ High Risk Patient Detected',
+                  body: `Possible: ${predData.primary_disease} (${Math.round(predData.confidence)}% confidence). Immediate review required.`,
+                  urgency: 'critical',
+                  icon: path.join(__dirname, "..", "frontend", "static", "logo.png")
+              }).show();
+          }
+      }
+      return result;
+  });
   handle("db:getPredictionHistory",  (patientId)           => db.getPredictionHistory(patientId));
   handle("db:getDashboardStats",     ()                    => db.getDashboardStats());
+  handle("db:getWeeklyTrend",        ()                    => db.getWeeklyTrend());
   handle("db:getRecentAssessments",  (limit)               => db.getRecentAssessments(limit));
 
   // ── Utilities ─────────────────────────────────────────────────────────────
@@ -119,15 +146,22 @@ function registerIpcHandlers() {
   handle("db:getPath",  ()  => db.getDbPath());
 
   // ── Authentication ────────────────────────────────────────────────────────
-  handle("auth:login", async (username, password) => {
-    const user = db.verifyUser(username, password);
-    if (user) {
-      currentUser = user;
-      // Check if this is admin using the default password (flag set in DB)
-      currentUser._needsPasswordChange = db.userNeedsPasswordChange(user.id);
-      return user;
+  ipcMain.handle("auth:login", async (_event, username, password) => {
+    try {
+      if (!username || !password) {
+        return { ok: false, error: "Username and password are required." };
+      }
+      const user = db.verifyUser(username, password);
+      if (user) {
+        currentUser = user;
+        currentUser._needsPasswordChange = db.userNeedsPasswordChange(user.id);
+        return { ok: true, data: currentUser };
+      }
+      return { ok: false, error: "Invalid credentials. Please check your ID and PIN." };
+    } catch (err) {
+      console.error("[IPC:auth:login]", err.message);
+      return { ok: false, error: "Authentication service error. Please restart the app." };
     }
-    return null;
   });
 
   handle("auth:logout", async () => {
@@ -163,7 +197,17 @@ function registerIpcHandlers() {
     if (!currentUser || currentUser.role !== 'admin') {
       throw new Error("Unauthorised. Administrator privileges required.");
     }
-    return db.createUser(username, password, role);
+    if (!username || username.trim().length < 3) {
+      throw new Error("Username must be at least 3 characters.");
+    }
+    if (!password || password.length < 6) {
+      throw new Error("Password must be at least 6 characters.");
+    }
+    const validRoles = ['admin', 'clinician'];
+    if (!validRoles.includes(role)) {
+      throw new Error("Role must be 'admin' or 'clinician'.");
+    }
+    return db.createUser(username.trim(), password, role);
   });
 
   handle("auth:changePassword", async (userId, oldPassword, newPassword) => {

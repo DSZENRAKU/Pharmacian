@@ -41,7 +41,14 @@ class SymptomTranslator:
         "छातीत दुखणे": "chest pain", "चक्कर येणे": "dizziness", "अंगदुखी": "muscle aches",
         "घसा खवखवणे": "sore throat", "थंडी वाजणे": "chills", "पोटदुखी": "abdominal pain",
         "सर्दी": "cold", "जुलाब": "diarrhea", "बद्धकोष्ठता": "constipation",
-        "खाज": "itching", "पुरळ": "skin rash", "सांधेदुखी": "joint pain"
+        "खाज": "itching", "पुरळ": "skin rash", "सांधेदुखी": "joint pain",
+
+        # Extra Hindi additions
+        "पीठ दर्द": "back pain", "नींद न आना": "insomnia", 
+        "भूख न लगना": "loss of appetite", "वजन कम होना": "weight loss",
+        "पसीना आना": "sweating", "कमजोरी": "weakness",
+        "आंखों में जलन": "burning eyes", "कान में दर्द": "ear pain",
+        "नाक बंद": "nasal congestion", "धड़कन तेज होना": "palpitations"
     }
 
     @classmethod
@@ -106,11 +113,20 @@ def extract_hybrid_features(text: str, profile_data: Dict, symptoms_list: List[s
     translated_text = SymptomTranslator.translate(text)
     clean_text = re.sub(r"[^a-z\s]", " ", translated_text.lower())
     user_tokens = set(clean_text.split())
+
+    def normalize_token(t): 
+        return re.sub(r'[\s_-]', '', t.lower())
+        
+    user_normalized = set(normalize_token(w) for w in user_tokens)
+    text_normalized = normalize_token(translated_text)
+    
     s_core_list = symptoms_list[: -len(PROFILE_COLS)]
     features = []
+    
     for s in s_core_list:
-        s_words = set(s.split(".")[0].replace("_", " ").split())
-        if s_words.issubset(user_tokens) or s in user_tokens:
+        s_normalized = normalize_token(s.replace('_', ' '))
+        # match if normalized symptom in normalized user tokens or in the whole normalized text
+        if s_normalized in user_normalized or s_normalized in text_normalized:
             features.append(1)
         else:
             features.append(0)
@@ -175,6 +191,7 @@ def predict_health_risks(profile: Dict) -> List[Dict]:
             {
                 "condition": "Cardiovascular Disease",
                 "risk": "High",
+                "risk_score": min(10, h_score * 2),
                 "note": "Clinical profile indicates high risk. Immediate screening recommended.",
             }
         )
@@ -183,23 +200,50 @@ def predict_health_risks(profile: Dict) -> List[Dict]:
             {
                 "condition": "Cardiovascular Disease",
                 "risk": "Moderate",
+                "risk_score": min(10, h_score * 2),
                 "note": "Monitor daily BP and maintain active cardio routine.",
             }
         )
 
     d_score = 0
-    if profile["patient_weight"] > 85:
+    if profile.get("patient_weight", 0) > 85:
         d_score += 2
-    if profile["history_diabetes"]:
+    if profile.get("history_diabetes", 0):
         d_score += 4
     if d_score >= 4:
         risks.append(
             {
                 "condition": "Type 2 Diabetes",
                 "risk": "High",
+                "risk_score": min(10, d_score * 2),
                 "note": "High susceptibility detected. Recommend A1C screening.",
             }
         )
+        
+    if profile.get("history_asthma") and profile.get("patient_weight", 0) > 80:
+        risks.append({
+            "condition": "Respiratory Complications",
+            "risk": "High",
+            "risk_score": 8,
+            "note": "Elevated respiratory risk due to asthma history and weight."
+        })
+
+    if profile.get("history_allergy") and profile.get("patient_age", 99) < 30:
+        risks.append({
+            "condition": "Allergy Complications",
+            "risk": "Moderate",
+            "risk_score": 6,
+            "note": "Allergy risk elevated in younger demographic profile."
+        })
+
+    if profile.get("history_surgery") and profile.get("patient_age", 0) > 60:
+        risks.append({
+            "condition": "Surgical Complications",
+            "risk": "High",
+            "risk_score": 9,
+            "note": "Senior demographic with surgical history requires focused monitoring."
+        })
+
     return risks
 
 

@@ -34,6 +34,13 @@ contextBridge.exposeInMainWorld("pharmacianDB", {
   getPatientById: (id)                  => invoke("db:getPatientById", id),
 
   /**
+   * Simple patient search (non-paginated).
+   * @param {Object} filters - { search: '...' }
+   * @returns {Promise<{ ok, data: Array }>}
+   */
+  getPatients: (filters)                => invoke("db:getPatients", filters),
+
+  /**
    * @param {number} id
    * @param {Object} data - partial patient fields to update
    * @returns {Promise<{ ok, data: boolean }>}
@@ -64,6 +71,9 @@ contextBridge.exposeInMainWorld("pharmacianDB", {
 
   /** Aggregates clinical statistics for the high-level dashboard. */
   getDashboardStats:    ()              => invoke("db:getDashboardStats"),
+
+  /** Weekly assessment counts. */
+  getWeeklyTrend:       ()              => invoke("db:getWeeklyTrend"),
 
   /** Fetch the N most recent assessments with patient names. */
   getRecentAssessments: (limit)         => invoke("db:getRecentAssessments", limit),

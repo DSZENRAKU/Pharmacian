@@ -1,4 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain, Tray, Menu, nativeImage } = require("electron");
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+app.commandLine.appendSwitch('disable-disk-cache');
 const path = require("path");
 const { spawn } = require("child_process");
 const http = require("http");
@@ -104,7 +106,8 @@ async function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, "electron_bridge.js"),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      sandbox: false
     }
   });
 
@@ -133,17 +136,9 @@ async function createWindow() {
           mainWindow.webContents.loadURL(SERVER_URL + "diagnose");
           event.preventDefault();
       }
-      if (input.control && input.key.toLowerCase() === "f") {
-          // Send focus event if implemented in frontend or just ignore
-      }
       if (input.key === "F11") {
           mainWindow.setFullScreen(!mainWindow.isFullScreen());
           event.preventDefault();
-      }
-      // Ctrl+P can trigger standard print if needed:
-      if (input.control && input.key.toLowerCase() === "p") {
-          // If we had a specific print action, we could call it here.
-          // The frontend already handles the PDF download via button.
       }
   });
 
@@ -157,7 +152,10 @@ function createSplash() {
         transparent: true,
         frame: false,
         alwaysOnTop: true,
-        webPreferences: { nodeIntegration: false }
+        webPreferences: { 
+            nodeIntegration: false,
+            contextIsolation: true
+        }
     });
     splashWindow.loadFile(path.join(__dirname, "splash.html"));
 }

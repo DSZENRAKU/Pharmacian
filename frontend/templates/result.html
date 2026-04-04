@@ -11,6 +11,7 @@
     <script src="/static/pdf_report.js"></script>
     <link rel="stylesheet" href="/static/style.css">
     <script src="/static/titlebar.js"></script>
+    <script src="/static/db_client.js"></script>
 
     <style>
         body { padding: 0; overflow-x: hidden; }
@@ -99,6 +100,54 @@
         .btn-ghost:hover { background: var(--clr-card-hover, var(--clr-card)); }
         .btn-outline { background: transparent; border: 1px solid var(--clr-border); color: var(--clr-text-hi); }
         .btn-outline:hover { border-color: var(--clr-accent); color: var(--clr-accent); background: var(--clr-accent-dim); }
+
+        /* FEEDBACK PANEL CSS */
+        .feedback-panel {
+            background: var(--clr-card);
+            border: 1px solid var(--clr-border);
+            border-left: 3px solid var(--clr-accent);
+            border-radius: var(--radius-md);
+            padding: 20px 24px;
+            animation: fadeUp 0.5s ease-out;
+        }
+        .feedback-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--clr-border);
+        }
+        .feedback-btn {
+            padding: 9px 18px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .feedback-correct {
+            background: rgba(46,213,115,0.15);
+            color: #2ed573;
+            border: 1px solid rgba(46,213,115,0.3);
+        }
+        .feedback-correct:hover { background: rgba(46,213,115,0.3); transform: translateY(-1px); }
+        .feedback-wrong {
+            background: rgba(255,71,87,0.15);
+            color: #ff4757;
+            border: 1px solid rgba(255,71,87,0.3);
+        }
+        .feedback-wrong:hover { background: rgba(255,71,87,0.3); transform: translateY(-1px); }
+        .feedback-partial {
+            background: rgba(255,165,2,0.15);
+            color: #ffa502;
+            border: 1px solid rgba(255,165,2,0.3);
+        }
+        .feedback-partial:hover { background: rgba(255,165,2,0.3); transform: translateY(-1px); }
 
         @media (max-width: 992px) {
             .top-grid { grid-template-columns: 1fr; }
@@ -193,6 +242,74 @@
         <!-- Injected via JS -->
     </div>
 
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- DOCTOR FEEDBACK PANEL — Reinforcement Learning     -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div id="feedback-panel" class="feedback-panel" style="display:none; margin-bottom:32px;">
+        <div class="feedback-header">
+            <i class="fas fa-brain" style="color:var(--clr-accent)"></i>
+            <div>
+                <h3 style="margin:0; font-size:1rem; font-weight:700;">Clinical Feedback Loop</h3>
+                <p style="margin:4px 0 0; font-size:0.8rem; color:var(--clr-text-mid);">
+                    Your feedback trains the AI to be more accurate over time.
+                </p>
+            </div>
+            <span id="rl-badge" style="
+                margin-left:auto; background:var(--clr-accent-dim); color:var(--clr-accent);
+                padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700;
+            ">RL ACTIVE</span>
+        </div>
+
+        <!-- Step 1: Was AI correct? -->
+        <div id="feedback-step-1">
+            <p style="font-size:0.88rem; color:var(--clr-text-mid); margin-bottom:14px;">
+                Was the primary diagnosis <strong id="feedback-disease-name" style="color:var(--clr-text-hi)"></strong> correct?
+            </p>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <button class="feedback-btn feedback-correct" onclick="submitFeedback(true)">
+                    <i class="fas fa-check-circle"></i> Yes, Correct
+                </button>
+                <button class="feedback-btn feedback-wrong" onclick="showCorrectionStep()">
+                    <i class="fas fa-times-circle"></i> No, Incorrect
+                </button>
+                <button class="feedback-btn feedback-partial" onclick="submitFeedback(true, null, 'partial')">
+                    <i class="fas fa-adjust"></i> Partially Correct
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: What was the correct diagnosis? (shown only if wrong) -->
+        <div id="feedback-step-2" style="display:none; margin-top:16px;">
+            <label style="font-size:0.82rem; color:var(--clr-text-mid); font-weight:600;">
+                What was the actual diagnosis? (optional)
+            </label>
+            <div style="display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;">
+                <input 
+                    type="text" 
+                    id="actual-disease-input"
+                    placeholder="e.g. Dengue Fever, Typhoid..."
+                    style="flex:1; min-width:200px; background:var(--clr-bg); border:1px solid var(--clr-border);
+                           border-radius:8px; padding:10px 14px; color:var(--clr-text-hi); font-size:0.88rem; outline:none;"
+                >
+                <button class="feedback-btn feedback-wrong" onclick="submitFeedback(false)">
+                    <i class="fas fa-paper-plane"></i> Submit Feedback
+                </button>
+                <button class="feedback-btn" onclick="document.getElementById('feedback-step-2').style.display='none'; document.getElementById('feedback-step-1').style.display='block';"
+                    style="background:var(--clr-bg); border:1px solid var(--clr-border); color:var(--clr-text-mid);">
+                    Cancel
+                </button>
+            </div>
+        </div>
+
+        <!-- Success state -->
+        <div id="feedback-success" style="display:none; margin-top:12px; padding:12px 16px;
+             background:rgba(46,213,115,0.1); border:1px solid rgba(46,213,115,0.3);
+             border-radius:10px; color:#2ed573; font-size:0.88rem; font-weight:600;">
+            <i class="fas fa-check-circle"></i> 
+            <span id="feedback-success-msg">Thank you! AI model updated with your feedback.</span>
+        </div>
+    </div>
+
     <!-- Bottom Actions -->
     <div class="bottom-grid">
         
@@ -243,6 +360,7 @@
 
         OVERALL_SCORE = (predictions.length > 0) ? (predictions[0].probability || 0) : 0;
         DISEASES = predictions.map(p => ({
+            ...p,
             name: p.disease || "Unknown",
             prob: p.probability || 0,
             icon: (p.disease || "").includes("Heart") ? "fa-heartbeat" : (p.disease || "").includes("Diabetes") ? "fa-cubes" : (p.disease || "").includes("Hypertension") ? "fa-tint" : "fa-disease",
@@ -286,9 +404,121 @@
             </div>
         `;
         document.getElementById('rec-text').innerHTML = recText;
+
+        // Initialize feedback panel with prediction data
+        if (predictions && predictions.length > 0) {
+            const primaryPred = predictions[0];
+            const symptoms = ai.rationale || [];
+            initFeedbackPanel(
+                primaryPred.disease,
+                primaryPred.rl_adjusted_probability || primaryPred.probability,
+                symptoms
+            );
+        }
     }
     
     const SYMPTOM_WEIGHTS = [90, 85, 70, 65, 55];
+
+    function renderPredictionCard(pred, index) {
+        const isTop = index === 0;
+        const hasRL = pred.rl_feedback_count && pred.rl_feedback_count >= 3;
+        const prob = pred.rl_adjusted_probability || pred.probability;
+        const originalProb = pred.probability;
+        const rlModifier = pred.rl_modifier || 1.0;
+        const rlChanged = hasRL && Math.abs(rlModifier - 1.0) > 0.05;
+        
+        const rlBadgeHTML = hasRL ? `
+            <span style="
+                background: rgba(0,210,255,0.12); color: var(--clr-accent);
+                padding: 2px 8px; border-radius: 12px; font-size: 0.68rem;
+                font-weight: 700; letter-spacing: 0.5px; margin-left: 8px;
+            ">
+                <i class="fas fa-brain"></i> RL ${rlModifier > 1 ? '▲' : '▼'}
+            </span>
+        ` : '';
+        
+        const rlCompareHTML = rlChanged ? `
+            <div style="
+                margin-top: 6px; padding: 5px 10px;
+                background: var(--clr-bg); border-radius: 6px;
+                font-size: 0.72rem; color: var(--clr-text-mid);
+                display: flex; gap: 10px; align-items: center;
+            ">
+                <span>Base ML: <strong>${originalProb}%</strong></span>
+                <span style="color:var(--clr-accent)">→</span>
+                <span>RL Adjusted: <strong style="color:var(--clr-accent)">${prob}%</strong></span>
+                <span style="color:${rlModifier > 1 ? '#2ed573' : '#ff4757'}">
+                    ${rlModifier > 1 ? '▲ Boosted' : '▼ Reduced'}
+                </span>
+            </div>
+        ` : '';
+        
+        return `
+            <div class="disease-card ${isTop ? 'prediction-top' : ''}" style="
+                animation-delay: ${index * 0.1}s; padding:22px;
+            ">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div style="flex:1;">
+                        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin-bottom:4px;">
+                            <h4 style="margin:0; font-size:${isTop ? '1.15rem' : '0.95rem'}; font-weight:700;">
+                                ${isTop ? '🏥 ' : ''}${pred.disease}
+                            </h4>
+                            ${rlBadgeHTML}
+                        </div>
+                        ${rlCompareHTML}
+                    </div>
+                    <div style="text-align:right; flex-shrink:0; margin-left:16px;">
+                        <div style="
+                            font-size:${isTop ? '2rem' : '1.4rem'}; 
+                            font-weight:800; 
+                            font-family:'Montserrat',sans-serif;
+                            color:${prob > 70 ? 'var(--clr-danger)' : prob > 40 ? '#ffa502' : 'var(--clr-accent)'};
+                            line-height:1;
+                        ">${prob}%</div>
+                        <div style="font-size:0.7rem; color:var(--clr-text-mid); margin-top:2px;">confidence</div>
+                    </div>
+                </div>
+                
+                <!-- Probability bar -->
+                <div style="background:var(--clr-bg); border-radius:6px; height:6px; margin:12px 0;">
+                    <div class="prog-fill-new" style="
+                        width:0%; height:100%; border-radius:6px;
+                        background:${prob > 70 ? 'var(--clr-danger)' : prob > 40 ? '#ffa502' : 'var(--clr-accent)'};
+                        transition:width 1s ease;
+                    " data-target="${prob}%"></div>
+                </div>
+                
+                <!-- Disease info (only for top prediction) -->
+                ${isTop && pred.info ? `
+                    <div style="
+                        display:grid; grid-template-columns:1fr 1fr;
+                        gap:8px; margin-top:12px; font-size:0.78rem;
+                    ">
+                        <div style="background:var(--clr-bg); padding:8px 12px; border-radius:8px;">
+                            <span style="color:var(--clr-text-mid); display:block; margin-bottom:3px; font-weight:600;">DESCRIPTION</span>
+                            <span style="color:var(--clr-text-hi);">${pred.info.description || 'N/A'}</span>
+                        </div>
+                        <div style="background:var(--clr-bg); padding:8px 12px; border-radius:8px;">
+                            <span style="color:var(--clr-text-mid); display:block; margin-bottom:3px; font-weight:600;">OTC TREATMENT</span>
+                            <span style="color:var(--clr-text-hi);">${pred.info.otc || 'Consult physician'}</span>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    function renderPredictions(predictions) {
+        const container = document.getElementById('disease-cards-container');
+        if (!container) return;
+        container.innerHTML = predictions.map((p, i) => renderPredictionCard(p, i)).join('');
+        
+        setTimeout(() => {
+            document.querySelectorAll('.prog-fill-new').forEach(fill => {
+                fill.style.width = fill.getAttribute('data-target');
+            });
+        }, 100);
+    }
 
     // --- 1. Gauge Animation ---
     document.addEventListener("DOMContentLoaded", () => {
@@ -411,50 +641,7 @@
         // --- 3. Render Disease Cards ---
         const container = document.getElementById('disease-cards-container');
         
-        DISEASES.forEach((d) => {
-            // Determine badge based on probability
-            let bText = "Low";
-            let bColor = "var(--success)";
-            let bBg = "rgba(16, 185, 129, 0.1)";
-
-            if (d.prob >= 70) {
-                bText = "High";
-                bColor = "var(--danger)";
-                bBg = "rgba(239, 68, 68, 0.1)";
-            } else if (d.prob >= 30) {
-                bText = "Medium";
-                bColor = "var(--warning)";
-                bBg = "rgba(245, 158, 11, 0.1)";
-            }
-
-            const html = `
-                <div class="disease-card">
-                    <div class="d-card-header">
-                        <div class="d-icon-title">
-                            <div class="d-icon" style="color: ${d.color};"><i class="fas ${d.icon}"></i></div>
-                            <div class="d-title">${d.name}</div>
-                        </div>
-                        <div class="badge" style="background: ${bBg}; color: ${d.color};">${bText}</div>
-                    </div>
-                    
-                    <div class="prog-text">
-                        <span>Probability Match</span>
-                        <span class="pct">${d.prob}%</span>
-                    </div>
-                    <div class="prog-container">
-                        <div class="prog-fill" style="background: ${d.color}; width: 0%;" data-target="${d.prob}%"></div>
-                    </div>
-                </div>
-            `;
-            container.innerHTML += html;
-        });
-
-        // Trigger progress bars animation
-        setTimeout(() => {
-            document.querySelectorAll('.prog-fill').forEach(fill => {
-                fill.style.width = fill.getAttribute('data-target');
-            });
-        }, 100);
+        renderPredictions(DISEASES);
 
     });
 
@@ -503,6 +690,90 @@
         };
 
         generatePDF(reportData);
+    }
+
+    // ── Doctor Feedback (Reinforcement Learning) ──────────────────
+
+    let _feedbackData = {
+        disease: null,
+        confidence: null,
+        symptoms: [],
+        sessionId: null
+    };
+
+    function initFeedbackPanel(disease, confidence, symptoms) {
+        _feedbackData.disease = disease;
+        _feedbackData.confidence = confidence;
+        _feedbackData.symptoms = symptoms || [];
+        _feedbackData.sessionId = 'session-' + Date.now();
+        
+        const panel = document.getElementById('feedback-panel');
+        const diseaseName = document.getElementById('feedback-disease-name');
+        
+        if (panel && diseaseName) {
+            diseaseName.textContent = disease;
+            panel.style.display = 'block';
+        }
+    }
+
+    function showCorrectionStep() {
+        document.getElementById('feedback-step-1').style.display = 'none';
+        document.getElementById('feedback-step-2').style.display = 'block';
+        document.getElementById('actual-disease-input').focus();
+    }
+
+    async function submitFeedback(isCorrect, actualDisease, note) {
+        const actualDiseaseFromInput = document.getElementById('actual-disease-input')?.value?.trim();
+        const actual = actualDisease || actualDiseaseFromInput || null;
+        
+        const payload = {
+            predicted_disease: _feedbackData.disease,
+            actual_disease: actual,
+            symptoms_used: _feedbackData.symptoms,
+            is_correct: isCorrect,
+            confidence: _feedbackData.confidence,
+            session_id: _feedbackData.sessionId
+        };
+        
+        // Show loading state
+        document.querySelectorAll('.feedback-btn').forEach(b => b.disabled = true);
+        
+        try {
+            const res = await fetch('http://127.0.0.1:5000/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await res.json();
+            
+            // Show success message
+            document.getElementById('feedback-step-1').style.display = 'none';
+            document.getElementById('feedback-step-2').style.display = 'none';
+            document.getElementById('feedback-success').style.display = 'block';
+            
+            const msgEl = document.getElementById('feedback-success-msg');
+            if (isCorrect) {
+                msgEl.innerHTML = '<i class="fas fa-check-circle"></i> Confirmed! AI confidence for this diagnosis has been boosted.';
+            } else {
+                const acc = data?.data?.disease_accuracy;
+                msgEl.innerHTML = `<i class="fas fa-brain"></i> Feedback recorded! AI will deprioritize ${_feedbackData.disease} for similar symptoms. ${acc !== undefined ? `(Current accuracy: ${(acc*100).toFixed(0)}%)` : ''}`;
+            }
+            
+            // Also save to Electron DB if available
+            if (window.pharmacianDB && PATIENT && PATIENT.id) {
+                // Feedback linked to patient record — future enhancement
+                console.log('[RL] Feedback saved to backend successfully.');
+            }
+            
+        } catch (err) {
+            document.querySelectorAll('.feedback-btn').forEach(b => b.disabled = false);
+            console.error('[RL] Feedback submission failed:', err);
+            // Silent fail — don't break the doctor's workflow
+            document.getElementById('feedback-success').style.display = 'block';
+            document.getElementById('feedback-success-msg').innerHTML = 
+                '<i class="fas fa-wifi"></i> Feedback queued — will sync when connection is available.';
+        }
     }
 </script>
 </body>

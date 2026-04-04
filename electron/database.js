@@ -121,20 +121,21 @@ function createDatabase() {
   } catch (_) { /* column already exists — ignore */ }
 
   // Initialize Default Admin if no users exist
-  const userCount = db.prepare("SELECT COUNT(*) as c FROM users").get().c;
-  if (userCount === 0) {
-    console.log("[DB] Initialising default administrator account...");
-    const { hash, salt } = hashPassword("admin123");
-    // needs_password_change=1 forces admin to change password on first login
-    db.prepare("INSERT INTO users (username, password_hash, salt, role, needs_password_change) VALUES (?, ?, ?, ?, ?)")
-      .run("admin", hash, salt, "admin", 1);
+  const existingAdmin = db.prepare("SELECT id FROM users WHERE username = 'admin'").get();
+  if (!existingAdmin) {
+      console.log("[DB] Creating default administrator account...");
+      const { hash, salt } = hashPassword("admin123");
+      db.prepare("INSERT INTO users (username, password_hash, salt, role, needs_password_change) VALUES (?, ?, ?, ?, 1)")
+        .run("admin", hash, salt, "admin", 1);
+      console.log("[DB] Admin account created. Login: admin / admin123");
   }
-  // Ensure a guest account exists for kiosk/demo mode
-  const guest = db.prepare("SELECT id FROM users WHERE username = ?").get("guest");
-  if (!guest) {
-    const { hash, salt } = hashPassword("guest");
-    db.prepare("INSERT INTO users (username, password_hash, salt, role) VALUES (?, ?, ?, ?)")
-      .run("guest", hash, salt, "clinician");
+
+  const existingGuest = db.prepare("SELECT id FROM users WHERE username = 'guest'").get();
+  if (!existingGuest) {
+      console.log("[DB] Creating guest account...");
+      const { hash: gh, salt: gs } = hashPassword("guest");
+      db.prepare("INSERT INTO users (username, password_hash, salt, role, needs_password_change) VALUES (?, ?, ?, ?, 0)")
+        .run("guest", gh, gs, "clinician", 0);
   }
 
   console.log("[DB] Schema ready.");
@@ -143,7 +144,9 @@ function createDatabase() {
 
 // Ensure DB is initialised before any operation
 function getDb() {
-  if (!db) throw new Error("Database not initialised. Call createDatabase() first.");
+  if (!db) {
+    throw new Error("[DB] Database not initialized. Call createDatabase() first.");
+  }
   return db;
 }
 
@@ -189,6 +192,23 @@ function insertPatient(data) {
     return { id: result.lastInsertRowid, patient_code: code };
   } catch (err) {
     throw new DbError("insertPatient", err);
+  }
+}
+
+function getPatients({ search = '' } = {}) {
+  try {
+    const q = `%${search}%`;
+    return getDb().prepare(`
+        SELECT p.*, pr.risk_level, pr.primary_disease, pr.created_at AS last_scan
+        FROM patients p
+        LEFT JOIN predictions pr ON p.id = pr.patient_id 
+        AND pr.id = (SELECT MAX(id) FROM predictions WHERE patient_id = p.id)
+        WHERE p.deleted_at IS NULL
+        AND (p.full_name LIKE ? OR p.patient_code LIKE ? OR p.contact LIKE ?)
+        ORDER BY COALESCE(pr.created_at, p.created_at) DESC
+    `).all(q, q, q);
+  } catch(err) {
+    throw new DbError("getPatients", err);
   }
 }
 
@@ -246,7 +266,7 @@ function getAllPatients(page = 1, limit = 10, filters = {}) {
       FROM patients p
       ${riskJoin}
       ${baseWhere}
-      ORDER BY p.created_at DESC
+      ORDER BY COALESCE(latest_pred.created_at, p.created_at) DESC
       LIMIT @limit OFFSET @offset
     `;
     const patients = getDb().prepare(dataQuery).all({ ...params, limit, offset });
@@ -316,6 +336,17 @@ function deletePatient(id) {
     return result.changes > 0;
   } catch (err) {
     throw new DbError("deletePatient", err);
+  }
+}
+
+function softDeletePatient(id) {
+  try {
+    const result = getDb().prepare(
+        "UPDATE patients SET deleted_at = datetime('now') WHERE id = ?"
+    ).run(id);
+    return result.changes > 0;
+  } catch (err) {
+    throw new DbError("softDeletePatient", err);
   }
 }
 
@@ -401,45 +432,53 @@ function getPredictionHistory(patientId) {
  */
 function getDashboardStats() {
   try {
-    const db = getDb();
-    
-    // 1. Total Patients
-    const totalPatients = db.prepare("SELECT COUNT(*) AS c FROM patients").get().c;
-    
-    // 2. Predictions Today (UTC based to match created_at storage)
-    const predictionsToday = db.prepare("SELECT COUNT(*) AS c FROM predictions WHERE date(created_at) = date('now')").get().c;
-    
-    // 3. High Risk Cases
-    const highRiskCases = db.prepare("SELECT COUNT(*) AS c FROM predictions WHERE risk_level = 'High'").get().c;
-    
-    // 4. Weekly Trend (last 7 days counts)
-    const weeklyTrend = db.prepare(`
-      SELECT date(created_at) as day, COUNT(*) as count 
-      FROM predictions 
-      WHERE created_at >= date('now', '-7 days')
-      GROUP BY day 
-      ORDER BY day ASC
+    const totalPatients = getDb().prepare("SELECT COUNT(*) as c FROM patients WHERE deleted_at IS NULL").get().c;
+    const highRiskCount = getDb().prepare("SELECT COUNT(*) as c FROM predictions WHERE risk_level = 'High' AND date(created_at) >= date('now', '-30 days')").get().c;
+    const todayAssessments = getDb().prepare("SELECT COUNT(*) as c FROM predictions WHERE date(created_at) = date('now')").get().c;
+    const recentPatients = getDb().prepare(`
+        SELECT p.full_name, p.patient_code, pr.primary_disease, pr.risk_level, pr.created_at
+        FROM patients p
+        LEFT JOIN predictions pr ON p.id = pr.patient_id
+        WHERE p.deleted_at IS NULL
+        ORDER BY pr.created_at DESC LIMIT 5
     `).all();
-    
-    // 5. Disease Distribution (top 5)
-    const diseaseDistribution = db.prepare(`
-      SELECT primary_disease, COUNT(*) as count 
-      FROM predictions 
-      WHERE primary_disease IS NOT NULL
-      GROUP BY primary_disease 
-      ORDER BY count DESC 
-      LIMIT 5
+    const riskDistribution = getDb().prepare(`
+        SELECT risk_level as label, COUNT(*) as count 
+        FROM predictions 
+        GROUP BY risk_level
     `).all();
-
-    return {
-      totalPatients,
-      predictionsToday,
-      highRiskCases,
-      weeklyTrend,
-      diseaseDistribution
-    };
+    return { totalPatients, highRiskCount, todayAssessments, recentPatients, riskDistribution };
   } catch (err) {
     throw new DbError("getDashboardStats", err);
+  }
+}
+
+function getWeeklyTrend() {
+  try {
+    // Generate last 7 days including today
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push(d.toISOString().split('T')[0]);
+    }
+
+    const rows = getDb().prepare(`
+        SELECT date(created_at) as day, COUNT(*) as count
+        FROM predictions
+        WHERE date(created_at) >= date('now', '-7 days')
+        GROUP BY date(created_at)
+    `).all();
+
+    // Map rows to the full 7-day list
+    return days.map(d => {
+        const row = rows.find(r => r.day === d);
+        const dateObj = new Date(d);
+        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+        return { day: dayName, count: row ? row.count : 0 };
+    });
+  } catch (err) {
+    throw new DbError("getWeeklyTrend", err);
   }
 }
 
@@ -452,6 +491,7 @@ function getRecentAssessments(limit = 8) {
       SELECT p.id as patient_id, p.full_name, p.age, pr.risk_level, pr.primary_disease, pr.created_at
       FROM predictions pr
       JOIN patients p ON pr.patient_id = p.id
+      WHERE p.deleted_at IS NULL
       ORDER BY pr.created_at DESC
       LIMIT ?
     `).all(limit);
@@ -596,4 +636,7 @@ module.exports = {
   backupDatabase,
   userNeedsPasswordChange,
   clearPasswordChangeFlag,
+  getWeeklyTrend,
+  getPatients,
+  softDeletePatient,
 };

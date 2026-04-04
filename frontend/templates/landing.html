@@ -398,12 +398,6 @@
                 <i class="fas fa-sign-in-alt"></i> Sign In
             </button>
 
-            <div class="divider">or</div>
-
-            <button class="btn btn-secondary" onclick="continueAsGuest()">
-                <i class="fas fa-user-clock"></i> Continue as Guest
-            </button>
-
             <div class="auth-footer">
                 By accessing the platform you agree to our<br>
                 <strong>Clinical Data Use Policy</strong> and <strong>Privacy Guidelines</strong>.
@@ -416,13 +410,13 @@
     </footer>
 
     <script>
-        /* Subtle dot particle background */
+        // ── Particle Canvas ──────────────────────────────────────────
         const canvas = document.getElementById('particles');
         const ctx = canvas.getContext('2d');
         let dots = [];
 
         function resize() {
-            canvas.width = window.innerWidth;
+            canvas.width  = window.innerWidth;
             canvas.height = window.innerHeight;
         }
         window.addEventListener('resize', resize);
@@ -430,43 +424,40 @@
 
         class Dot {
             constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
+                this.x  = Math.random() * canvas.width;
+                this.y  = Math.random() * canvas.height;
                 this.vx = (Math.random() - 0.5) * 0.4;
                 this.vy = (Math.random() - 0.5) * 0.4;
-                this.r = Math.random() * 1.5 + 0.5;
+                this.r  = Math.random() * 1.5 + 0.5;
             }
             draw() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(2, 132, 199, 0.35)';
+                ctx.fillStyle = 'rgba(2,132,199,0.35)';
                 ctx.fill();
             }
             update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+                this.x += this.vx; this.y += this.vy;
+                if (this.x < 0 || this.x > canvas.width)  this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height)  this.vy *= -1;
             }
         }
 
-        function init() {
+        function initDots() {
             dots = [];
             for (let i = 0; i < 50; i++) dots.push(new Dot());
         }
 
-        function animate() {
+        (function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             dots.forEach((d, i) => {
-                d.update();
-                d.draw();
+                d.update(); d.draw();
                 for (let j = i + 1; j < dots.length; j++) {
-                    const dx = d.x - dots[j].x;
-                    const dy = d.y - dots[j].y;
+                    const dx = d.x - dots[j].x, dy = d.y - dots[j].y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     if (dist < 120) {
                         ctx.beginPath();
-                        ctx.strokeStyle = `rgba(2, 132, 199, ${0.15 - dist / 1200})`;
+                        ctx.strokeStyle = `rgba(2,132,199,${0.15 - dist / 1200})`;
                         ctx.lineWidth = 0.6;
                         ctx.moveTo(d.x, d.y);
                         ctx.lineTo(dots[j].x, dots[j].y);
@@ -475,98 +466,118 @@
                 }
             });
             requestAnimationFrame(animate);
-        }
+        })();
+        initDots();
 
-        init();
-        animate();
-
+        // ── UI Helpers ───────────────────────────────────────────────
         function showError(msg) {
-            const errDiv = document.getElementById('auth-error');
-            const errText = document.getElementById('error-text');
-            errText.innerText = msg;
-            errDiv.style.display = 'block';
-            setTimeout(() => { errDiv.style.display = 'none'; }, 5000);
+            const div  = document.getElementById('auth-error');
+            const span = document.getElementById('error-text');
+            if (!div || !span) return;
+            span.textContent = msg;
+            div.style.display = 'block';
+            clearTimeout(div._timer);
+            div._timer = setTimeout(() => { div.style.display = 'none'; }, 5000);
         }
 
-        function getAuth() {
-            if (!window.pharmacianAuth) {
-                showError("Desktop authentication service unavailable. Please launch the Electron app.");
-                return null;
-            }
-            return window.pharmacianAuth;
-        }
-
-        function setAuthEnabled(enabled) {
-            const btns = document.querySelectorAll(".btn");
-            btns.forEach(b => {
-                b.disabled = !enabled;
-                b.style.opacity = enabled ? "1" : "0.7";
-                b.style.cursor = enabled ? "pointer" : "not-allowed";
+        function setBusy(busy) {
+            document.querySelectorAll('.btn').forEach(b => {
+                b.disabled = busy;
+                b.style.opacity = busy ? '0.65' : '1';
             });
         }
 
-        document.addEventListener("DOMContentLoaded", async () => {
-            if (!window.pharmacianAuth) {
-                setAuthEnabled(false);
-                showError("Desktop authentication service unavailable. Please launch the Electron app.");
-                return;
-            }
-            
-            // Check if already logged in -> redirect to dashboard
-            try {
-                const res = await window.pharmacianAuth.getUser();
-                if (res && res.ok && res.data) {
-                    window.location.href = '/dashboard';
-                }
-            } catch (e) {
-                console.warn("Session check failed", e);
-            }
-        });
+        // ── Auth ────────────────────────────────────────────────────
+        const IS_ELECTRON = !!window.pharmacianAuth;
 
-        /* Clinical Authentication */
         async function proceed() {
-            const auth = getAuth();
-            if (!auth) return;
+            const username = (document.getElementById('username')?.value || '').trim();
+            const password  = document.getElementById('password')?.value || '';
 
-            const user = document.getElementById('username')?.value;
-            const pass = document.getElementById('password')?.value;
-
-            if (!user || !pass) {
-                showError("Authorisation Required: Please enter your Clinician ID and Access PIN.");
+            if (!username || !password) {
+                showError('Please enter your Clinician ID and Access PIN.');
                 return;
             }
 
-            const res = await auth.login(user, pass);
-            if (res && res.ok && res.data) {
-                document.body.style.transition = 'opacity 0.5s ease-out';
-                document.body.style.opacity = '0';
-                setTimeout(() => { window.location.href = '/dashboard'; }, 450);
+            setBusy(true);
+
+            if (IS_ELECTRON) {
+                const res = await window.pharmacianAuth.login(username, password);
+                setBusy(false);
+                if (res && res.ok && res.data) {
+                    document.body.style.transition = 'opacity 0.4s ease';
+                    document.body.style.opacity = '0';
+                    setTimeout(() => { window.location.href = '/dashboard'; }, 400);
+                } else {
+                    showError(res?.error || 'Access Denied: Invalid credentials.');
+                }
             } else {
-                showError(res?.error || "Access Denied: Invalid clinician credentials.");
+                // Web / browser demo mode
+                const validCredentials = [
+                    { user: 'admin',  pass: 'admin123', role: 'admin'     },
+                    { user: 'guest',  pass: 'guest',    role: 'clinician' },
+                    { user: 'doctor', pass: 'doctor',   role: 'clinician' },
+                ];
+                const match = validCredentials.find(
+                    c => c.user === username && c.pass === password
+                );
+                setBusy(false);
+                if (match) {
+                    sessionStorage.setItem('pharmacian_web_user', JSON.stringify({
+                        username: match.user,
+                        role:     match.role
+                    }));
+                    document.body.style.transition = 'opacity 0.4s ease';
+                    document.body.style.opacity = '0';
+                    setTimeout(() => { window.location.href = '/dashboard'; }, 400);
+                } else {
+                    showError('Access Denied: Invalid credentials.');
+                }
             }
         }
 
         async function continueAsGuest() {
-            const auth = getAuth();
-            if (!auth) return;
-
-            // Attempt guest login with default credentials
-            const res = await auth.login('guest', 'guest');
-            if (res && res.ok && res.data) {
-                document.body.style.transition = 'opacity 0.5s ease-out';
-                document.body.style.opacity = '0';
-                setTimeout(() => { window.location.href = '/dashboard'; }, 450);
+            setBusy(true);
+            if (IS_ELECTRON) {
+                const res = await window.pharmacianAuth.login('guest', 'guest');
+                setBusy(false);
+                if (res && res.ok && res.data) {
+                    document.body.style.opacity = '0';
+                    setTimeout(() => { window.location.href = '/dashboard'; }, 400);
+                } else {
+                    showError('Guest account unavailable. Contact your administrator.');
+                }
             } else {
-                // Fallback to manual guest field entry if no guest account exists
-                document.getElementById('username').value = 'guest';
-                document.getElementById('password').value = 'guest';
-                showError("Guest registration required. Please click 'Sign In' or contact IT.");
+                setBusy(false);
+                sessionStorage.setItem('pharmacian_web_user', JSON.stringify({ username: 'guest', role: 'clinician' }));
+                document.body.style.opacity = '0';
+                setTimeout(() => { window.location.href = '/dashboard'; }, 400);
             }
         }
 
-        /* Enter key to login */
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') proceed();
+        // ── Init ────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Auto-redirect if already logged in
+            if (IS_ELECTRON) {
+                try {
+                    const res = await window.pharmacianAuth.getUser();
+                    if (res && res.ok && res.data) {
+                        window.location.href = '/dashboard';
+                        return;
+                    }
+                } catch (_) {}
+            } else {
+                const stored = sessionStorage.getItem('pharmacian_web_user');
+                if (stored) {
+                    window.location.href = '/dashboard';
+                    return;
+                }
+            }
+
+            // Enter key to login — attach AFTER DOM ready
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') proceed();
+            });
         });
     </script>
 </body>

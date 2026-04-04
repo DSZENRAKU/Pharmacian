@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/style.css">
     <script src="/static/titlebar.js"></script>
+    <script src="/static/db_client.js"></script>
     <style>
         body { display: flex; }
 
@@ -216,114 +217,100 @@
 
     <script src="/static/nav.js"></script>
     <script>
-        let dataset = [];
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadPatients();
+            setupSearch();
+        });
 
-        async function fetchPatients() {
-            if (!window.pharmacianDB) return;
-            try {
-                const res = await window.pharmacianDB.getAllPatients(1, 1000);
-                if (res.ok && res.data && res.data.patients) {
-                    dataset = res.data.patients.map(p => ({
-                        id:       p.id,
-                        name:     p.full_name,
-                        age:      p.age,
-                        gender:   p.gender,
-                        lastScan: p.last_scan  ? new Date(p.last_scan).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—',
-                        disease:  p.last_disease || '—',
-                        risk:     p.last_risk    || 'Low'
-                    }));
-                    applyFilters();
-                }
-            } catch (err) { console.error(err); }
+        async function loadPatients(searchQuery = '') {
+            const patients = await DB.getPatients({ search: searchQuery });
+            renderPatientTable(patients);
         }
 
-        function applyFilters() {
-            const q = (document.getElementById('filter-search').value || '').toLowerCase();
-            const r = document.getElementById('filter-risk').value;
-            const filtered = dataset.filter(p => {
-                const matchQ = p.name.toLowerCase().includes(q) || String(p.id).includes(q);
-                const matchR = r === 'All' || p.risk === r;
-                return matchQ && matchR;
-            });
-            renderTable(filtered);
-        }
-
-        function renderTable(data) {
+        function renderPatientTable(patients) {
             const tbody = document.getElementById('table-body');
-            document.getElementById('count-total').innerText = data.length;
-            document.getElementById('count-badge').innerText  = data.length;
+            const countBadge = document.getElementById('count-badge');
+            const countTotal = document.getElementById('count-total');
+            if(countBadge) countBadge.innerText = patients.length;
+            if(countTotal) countTotal.innerText = patients.length;
 
-            if (!data.length) {
-                tbody.innerHTML = `<tr><td colspan="7">
-                    <div class="empty-state">
-                        <i class="fas fa-folder-open"></i>
-                        <p>No patients match your filter criteria.</p>
-                    </div>
-                </td></tr>`;
+            if (!patients.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--clr-text-mid);padding:40px"><div class="empty-state"><p>No patients found</p></div></td></tr>';
                 return;
             }
-
-            tbody.innerHTML = data.map(p => {
-                const initials = p.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-                const riskCls  = p.risk === 'High' ? 'badge-high' : p.risk === 'Medium' ? 'badge-med' : 'badge-low';
-                return `<tr>
-                    <td style="color:var(--clr-text-mid); font-size:0.82rem">#${p.id}</td>
+            tbody.innerHTML = patients.map(p => {
+                const riskLevel = p.risk_level || p.risk || 'Low';
+                const riskCls = riskLevel === 'High' ? 'badge-high' : riskLevel === 'Medium' ? 'badge-med' : 'badge-low';
+                return `
+                <tr>
+                    <td style="color:var(--clr-text-mid); font-size:0.82rem">${p.patient_code || ('#'+p.id)}</td>
                     <td>
                         <div class="patient-cell">
-                            <div class="avatar">${initials}</div>
-                            <strong>${p.name}</strong>
+                            <div class="avatar">${p.full_name ? p.full_name.substring(0,2).toUpperCase() : 'NA'}</div>
+                            <strong>${p.full_name || p.name}</strong>
                         </div>
                     </td>
                     <td>${p.age} / ${p.gender}</td>
-                    <td>${p.lastScan}</td>
-                    <td>${p.disease}</td>
-                    <td><span class="badge ${riskCls}">${p.risk}</span></td>
+                    <td>${(p.last_scan || p.created_at) ? new Date(p.last_scan || p.created_at).toLocaleDateString() : '—'}</td>
+                    <td>${p.primary_disease || '—'}</td>
+                    <td><span class="badge ${riskCls}">${riskLevel}</span></td>
                     <td style="text-align:right">
-                        <div style="display:flex; gap:8px; justify-content:flex-end">
-                            <button class="action-icon" onclick="viewReport(${p.id})" title="View Report"><i class="fas fa-eye"></i></button>
-                            <button class="action-icon delete" onclick="deletePatient(${p.id})" title="Delete"><i class="fas fa-trash"></i></button>
-                        </div>
+                        <button onclick="viewPatient(${p.id})" class="action-icon" title="View Patient"><i class="fas fa-eye"></i></button>
+                        <button onclick="deletePatient(${p.id})" class="action-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
                     </td>
-                </tr>`;
+                </tr>
+                `;
             }).join('');
         }
 
-        window.viewReport = async function(id) {
-            if (!window.pharmacianDB) return;
-            const res = await window.pharmacianDB.getPredictionHistory(id);
-            if (res.ok && res.data && res.data.length > 0) {
-                const latest = res.data[0];
-                const p = dataset.find(x => x.id === id);
-                try {
-                    sessionStorage.setItem('latestAssessment', JSON.stringify({
-                        patient: { name: p.name, age: p.age, gender: p.gender },
-                        vitals:  { bmi: latest.bmi, blood_pressure: latest.blood_pressure },
-                        result:  JSON.parse(latest.raw_payload)
-                    }));
-                } catch(e) {}
+        function setupSearch() {
+            const searchInput = document.getElementById('filter-search');
+            if (!searchInput) return;
+            let debounceTimer;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => loadPatients(e.target.value), 300);
+            });
+            
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                searchInput.value = '';
+                loadPatients();
+            });
+        }
+
+        window.deletePatient = async function(id) {
+            if (!confirm('Are you sure? This will soft-delete the patient record.')) return;
+            const isElectron = window.electronAPI !== undefined || window.pharmacianDB !== undefined;
+            let result;
+            if (isElectron) {
+                if (window.electronAPI && window.electronAPI.invoke) {
+                    result = await window.electronAPI.invoke('db:deletePatient', id);
+                } else if (window.pharmacianDB && window.pharmacianDB.deletePatient) {
+                    result = await window.pharmacianDB.deletePatient(id);
+                }
+                
+                if (result && (result === true || result.ok !== false)) {
+                    await loadPatients();
+                } else {
+                    alert('Failed to delete: ' + (result ? result.error : ''));
+                }
+            }
+        }
+        
+        window.viewPatient = async function(id) {
+            if (!window.pharmacianDB && !window.electronAPI) return;
+            let res;
+            if (window.pharmacianDB) {
+                res = await window.pharmacianDB.getPredictionHistory(id);
+            } else {
+                res = await window.electronAPI.invoke('db:getPredictionHistory', id);
+            }
+            if (res && res.ok && res.data && res.data.length > 0) {
                 window.location.href = '/result';
             } else {
                 alert('No assessment records found for this patient.');
             }
         };
-
-        window.deletePatient = async function(id) {
-            if (!confirm('Permanently delete this patient\'s clinical records?')) return;
-            if (window.pharmacianDB) {
-                await window.pharmacianDB.deletePatient(id);
-                fetchPatients();
-            }
-        };
-
-        document.getElementById('filter-search').addEventListener('input', applyFilters);
-        document.getElementById('filter-risk').addEventListener('change', applyFilters);
-        document.getElementById('btn-reset').addEventListener('click', () => {
-            document.getElementById('filter-search').value = '';
-            document.getElementById('filter-risk').value = 'All';
-            applyFilters();
-        });
-
-        fetchPatients();
     </script>
 </body>
 </html>

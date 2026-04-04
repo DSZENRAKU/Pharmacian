@@ -1,8 +1,12 @@
 from flask import Blueprint, current_app, jsonify, render_template, request, redirect
+from flask_cors import CORS
+import sqlite3
+import os
 
 from prediction_engine import predict_case, sanitize_medications, train_pipeline
 from response_formatting import error_response, refine_response, success_response
 from model_container import load_state_from_disk
+from reinforcement_engine import record_feedback, get_feedback_stats, apply_rl_boost
 
 bp = Blueprint("main", __name__)
 
@@ -17,6 +21,13 @@ def landing_page():
 def index_redirect():
     # Force legacy prototype requests to the modern dashboard
     return redirect("/dashboard")
+
+
+@bp.route("/health")
+def health_check():
+    state = current_app.extensions.get("model_state")
+    model_loaded = bool(state and state.random_forest)
+    return jsonify({"status": "ok", "model_loaded": model_loaded, "version": "2.0"})
 
 
 @bp.route("/dashboard")
@@ -49,17 +60,59 @@ def settings():
     return render_template("settings.html")
 
 
+@bp.route("/api/dashboard")
+def api_dashboard():
+    db_path = os.path.join(current_app.root_path, "data", "pharmacian.db")
+    if os.path.exists(db_path):
+        try:
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) as total_patients FROM patients")
+            total_patients = cursor.fetchone()["total_patients"]
+            conn.close()
+            return jsonify({"total_patients": total_patients, "status": "Live from SQLite"})
+        except Exception:
+            pass
+    return jsonify({
+        "total_patients": 42,
+        "critical_alerts": 3,
+        "recent_admissions": 5,
+        "status": "Mock Data"
+    })
+
+@bp.route("/api/patients")
+def api_patients():
+    db_path = os.path.join(current_app.root_path, "data", "pharmacian.db")
+    if os.path.exists(db_path):
+        try:
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM patients LIMIT 50")
+            patients = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            return jsonify({"patients": patients, "status": "Live from SQLite"})
+        except Exception:
+            pass
+    return jsonify({
+        "patients": [
+            {"id": 1, "name": "Rajesh Kumar", "age": 45, "condition": "Hypertension", "status": "Stable"},
+            {"id": 2, "name": "Priya Singh", "age": 32, "condition": "Asthma", "status": "Critical"}
+        ],
+        "status": "Mock Data"
+    })
+
 @bp.route("/predict", methods=["POST"])
 def predict():
     try:
-        data = request.get_json(force=True, silent=True) or {}
+        raw_data = request.get_json(force=True, silent=True)
+        if raw_data is None or not isinstance(raw_data, dict):
+            return jsonify({"error": "Invalid request payload. Send JSON."}), 400
+        data = raw_data
         symptoms_text = str(data.get("symptoms", "")).strip()
     except Exception:
-        payload, code = error_response("Invalid request payload.")
-        return jsonify(payload), code
-    if not isinstance(data, dict):
-        payload, code = error_response("Invalid request payload.")
-        return jsonify(payload), code
+        return jsonify({"error": "Could not parse request body."}), 400
 
     profile = {
         "history_hypertension": int(data.get("h_hyper", 0)),
@@ -78,9 +131,8 @@ def predict():
         payload, code = error_response(str(e))
         return jsonify(payload), code
 
-    if not symptoms_text:
-        payload, code = error_response("Symptoms are required.")
-        return jsonify(payload), code
+    if not symptoms_text or len(symptoms_text.strip()) < 3:
+        return jsonify({"error": "Please describe your symptoms in at least 3 characters.", "code": "SYMPTOMS_REQUIRED"}), 400
 
     state = current_app.extensions.get("model_state")
     if not state:
@@ -104,5 +156,64 @@ def predict():
     if status == "refine":
         body, code = refine_response(payload)
         return jsonify(body), code
+        
+    # Apply Reinforcement Learning boost to re-rank predictions
+    if "predictions" in payload and payload["predictions"]:
+        payload["predictions"] = apply_rl_boost(payload["predictions"])
     body, code = success_response(payload)
     return jsonify(body), code
+
+@bp.route("/feedback", methods=["POST"])
+def submit_feedback():
+    """
+    Doctor submits feedback on a prediction.
+    Expected JSON:
+    {
+        "predicted_disease": "Malaria",
+        "actual_disease": "Dengue",   // optional, what it actually was
+        "symptoms_used": ["fever", "headache"],
+        "is_correct": false,
+        "confidence": 87.5,
+        "session_id": "optional-uuid"
+    }
+    """
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        
+        predicted = str(data.get("predicted_disease", "")).strip()
+        actual = data.get("actual_disease")
+        if actual:
+            actual = str(actual).strip()
+        symptoms = data.get("symptoms_used", [])
+        if not isinstance(symptoms, list):
+            symptoms = []
+        is_correct = bool(data.get("is_correct", False))
+        confidence = float(data.get("confidence", 50.0))
+        session_id = str(data.get("session_id", ""))
+        
+        if not predicted:
+            return jsonify({"error": "predicted_disease is required"}), 400
+        
+        result = record_feedback(
+            predicted_disease=predicted,
+            actual_disease=actual,
+            symptoms_used=symptoms,
+            is_correct=is_correct,
+            confidence=confidence,
+            session_id=session_id
+        )
+        
+        return jsonify({"status": "ok", "data": result}), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/feedback/stats", methods=["GET"])
+def feedback_stats():
+    """Returns RL learning stats for the dashboard."""
+    try:
+        stats = get_feedback_stats()
+        return jsonify({"status": "ok", "data": stats}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

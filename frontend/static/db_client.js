@@ -116,6 +116,38 @@ const DB = {
 
   // ── Utilities ──────────────────────────────────────────────────────────────
 
+  /**
+   * Simple patient search (non-paginated).
+   * @param {Object} filters - { search: '...' }
+   * @returns {Promise<Array>}
+   */
+  async getPatients(filters = {}) {
+    if (!this._available()) return [];
+    const res = await window.pharmacianDB.getPatients(filters);
+    if (!res.ok) { console.error("[DB] getPatients:", res.error); return []; }
+    return res.data || [];
+  },
+
+  /**
+   * Clinical analytics for the dashboard.
+   */
+  async getDashboardStats() {
+    if (!this._available()) return null;
+    const res = await window.pharmacianDB.getDashboardStats();
+    if (!res.ok) { console.error("[DB] getDashboardStats:", res.error); return null; }
+    return res.data;
+  },
+
+  /**
+   * Weekly assessment counts.
+   */
+  async getWeeklyTrend() {
+    if (!this._available()) return [];
+    const res = await window.pharmacianDB.getWeeklyTrend();
+    if (!res.ok) { console.error("[DB] getWeeklyTrend:", res.error); return []; }
+    return res.data || [];
+  },
+
   /** Trigger a timestamped DB backup and return the file path. */
   async backup() {
     if (!this._available()) return null;
@@ -132,40 +164,4 @@ const DB = {
   },
 };
 
-// ── Usage Examples (for reference, remove in production) ──────────────────────
-/*
-  // Insert a patient
-  const { id, patient_code } = await DB.insertPatient({
-    full_name:   "Jane Doe",
-    age:         34,
-    gender:      "Female",
-    blood_group: "B+",
-    contact:     "9876543210",
-  });
 
-  // Get page 1 of patients, 10 per page, filtered by risk level
-  const { patients, total, totalPages } = await DB.getAllPatients(1, 10, {
-    search:     "Jane",
-    risk_level: "High",
-  });
-
-  // Save a prediction for her
-  await DB.insertPrediction(id, {
-    risk_level:      "High",
-    primary_disease: "Hypertension",
-    confidence:      82.4,
-    raw_payload:     JSON.stringify(flaskResponse),
-    bmi:             27.3,
-    blood_pressure:  "140/90",
-    blood_sugar:     110,
-    heart_rate:      95,
-    symptoms: [
-      { name: "Headache",           severity: "Moderate" },
-      { name: "Shortness of breath",severity: "Mild" },
-    ],
-  });
-
-  // Backup the DB
-  const backupPath = await DB.backup();
-  console.log("Backed up to:", backupPath);
-*/

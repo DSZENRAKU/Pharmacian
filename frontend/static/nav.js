@@ -145,17 +145,31 @@
         // 2. Auth guard — redirect to login if no active session
         let user = null;
         if (window.pharmacianAuth) {
+            // Electron mode — existing code stays as-is
             try {
                 const res = await window.pharmacianAuth.getUser();
-                if (res && res.ok && res.data) {
-                    user = res.data;
-                } else {
-                    // Not authenticated — redirect to login page
+                if (!res || !res.ok) {
                     window.location.href = '/';
-                    return;
+                    return null;
                 }
+                user = res.data;
             } catch (e) {
                 console.warn('[nav.js] Could not fetch user:', e);
+                window.location.href = '/';
+                return null;
+            }
+        } else {
+            // Web/browser mode fallback
+            const stored = sessionStorage.getItem('pharmacian_web_user');
+            if (!stored) {
+                window.location.href = '/';
+                return null;
+            }
+            try {
+                user = JSON.parse(stored);
+            } catch (_) {
+                window.location.href = '/';
+                return null;
             }
         }
 
@@ -180,7 +194,7 @@
             window.__pharmacianUser = user;
 
             // 4. Check if first login (needs password change)
-            if (window.pharmacianAuth.needsPasswordChange) {
+            if (window.pharmacianAuth && window.pharmacianAuth.needsPasswordChange) {
                 try {
                     const res = await window.pharmacianAuth.needsPasswordChange();
                     if (res && res.ok && res.data) {
@@ -201,6 +215,8 @@
                 if (window.pharmacianAuth) {
                     try { await window.pharmacianAuth.logout(); } catch (e) {}
                 }
+                // Always clear web session too
+                sessionStorage.removeItem('pharmacian_web_user');
                 window.location.href = '/';
             });
         });

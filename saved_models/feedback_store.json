@@ -1,0 +1,37 @@
+{
+  "total_feedbacks": 1,
+  "disease_scores": {
+    "Malaria": {
+      "correct": 1,
+      "total": 1,
+      "accuracy": 1.0,
+      "weight_modifier": 1.5
+    }
+  },
+  "symptom_disease_map": {
+    "fever::Malaria": {
+      "correct": 1,
+      "total": 1,
+      "reliability": 1.0
+    },
+    "chills::Malaria": {
+      "correct": 1,
+      "total": 1,
+      "reliability": 1.0
+    }
+  },
+  "feedback_log": [
+    {
+      "timestamp": "2026-04-04T20:44:57.787684",
+      "predicted": "Malaria",
+      "actual": null,
+      "is_correct": true,
+      "confidence": 90.0,
+      "symptoms": [
+        "fever",
+        "chills"
+      ],
+      "session_id": ""
+    }
+  ]
+}

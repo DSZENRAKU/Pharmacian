@@ -2,6 +2,7 @@ import logging
 import os
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 from api_endpoints import bp
 from logging_setup import setup_logging
@@ -16,6 +17,7 @@ def create_app():
         template_folder=os.path.join(base_dir, "frontend", "templates"),
         static_folder=os.path.join(base_dir, "frontend", "static")
     )
+    CORS(app)
     setup_logging(base_dir)
 
     state = ModelState()
@@ -42,9 +44,18 @@ def create_app():
 
     @app.errorhandler(Exception)
     def handle_exception(e):
-        if request.path.startswith("/predict"):
-            logging.exception("Unhandled error in /predict")
+        logging.exception(f"Unhandled error on {request.path}")
+        # For API routes return JSON, for page routes raise normally
+        if request.path.startswith("/predict") or request.path.startswith("/feedback") or request.path.startswith("/retrain"):
             return jsonify({"error": "Internal server error. Please try again."}), 500
         raise e
+
+    @app.errorhandler(404)
+    def not_found(e):
+        return jsonify({"error": "Route not found"}), 404
+
+    @app.errorhandler(405)
+    def method_not_allowed(e):
+        return jsonify({"error": "Method not allowed"}), 405
 
     return app
