@@ -2,11 +2,14 @@ from flask import Blueprint, current_app, jsonify, render_template, request, red
 from flask_cors import CORS
 import sqlite3
 import os
-
+import requests
 from prediction_engine import predict_case, sanitize_medications, train_pipeline
 from response_formatting import error_response, refine_response, success_response
 from model_container import load_state_from_disk
 from reinforcement_engine import record_feedback, get_feedback_stats, apply_rl_boost
+
+from dotenv import load_dotenv
+load_dotenv() # Load GEMINI_API_KEY from .env
 
 bp = Blueprint("main", __name__)
 
@@ -209,11 +212,74 @@ def submit_feedback():
         return jsonify({"error": str(e)}), 500
 
 
-@bp.route("/feedback/stats", methods=["GET"])
-def feedback_stats():
-    """Returns RL learning stats for the dashboard."""
+@bp.route("/api/chat", methods=["POST"])
+def api_chat():
+    """Gemini-powered clinical chatbot endpoint."""
     try:
-        stats = get_feedback_stats()
-        return jsonify({"status": "ok", "data": stats}), 200
+        data = request.get_json(force=True, silent=True) or {}
+        user_message = data.get("message", "").strip()
+        
+        if not user_message:
+            return jsonify({"error": "Message is required"}), 400
+            
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            # Try to re-load just in case
+            load_dotenv()
+            api_key = os.getenv("GEMINI_API_KEY")
+            
+        if not api_key:
+            print("CHAT ERR: GEMINI_API_KEY is missing in environment.")
+            return jsonify({"error": "Gemini API key not configured on server (Check .env)."}), 500
+            
+        context = "You are a clinical AI assistant for 'Pharmacian', a medical diagnostic platform. Keep responses concise and clinical."
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        
+        payload = {
+            "contents": [{
+                "parts": [{
+                    "text": f"{context}\n\nUser Question: {user_message}"
+                }]
+            }],
+            "generationConfig": {
+                "temperature": 0.7,
+                "topK": 40,
+                "topP": 0.95,
+                "maxOutputTokens": 1024,
+            }
+        }
+        
+        print(f"CHAT: Sending request to Gemini...")
+        response = requests.post(url, json=payload, timeout=20)
+        
+        if response.status_code != 200:
+            print(f"CHAT ERR: Gemini API returned status {response.status_code}: {response.text}")
+            return jsonify({"error": f"AI service error: {response.status_code}"}), 502
+            
+        result = response.json()
+        
+        # Extract the text from Gemini response structure
+        try:
+            if 'candidates' in result and result['candidates']:
+                candidate = result['candidates'][0]
+                if 'content' in candidate and 'parts' in candidate['content']:
+                    ai_text = candidate['content']['parts'][0]['text']
+                else:
+                    # Check for finishReason
+                    reason = candidate.get('finishReason', 'Unknown')
+                    ai_text = f"I cannot answer this clinical question right now (Reason: {reason})."
+            else:
+                print(f"CHAT ERR: No candidates in result: {result}")
+                ai_text = "I'm sorry, I couldn't process that clinical request at the moment."
+        except (KeyError, IndexError) as err:
+            print(f"CHAT ERR: Result parsing failed: {str(err)} | Full result: {result}")
+            ai_text = "I encountered an error while parsing the clinical response."
+            
+        return jsonify({"status": "ok", "reply": ai_text}), 200
+        
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        print(f"Chat Exception: {str(e)}")
+        return jsonify({"error": "Clinical Assistant is currently offline."}), 500

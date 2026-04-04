@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:5000;">
@@ -12,34 +12,47 @@
     <script src="/static/db_client.js"></script>
     <style>
         body { display: flex; }
-        .form-layout { display: grid; grid-template-columns: 240px 1fr; gap: 32px; margin-top: 24px; }
-        .scroll-spy { position: sticky; top: 100px; background: var(--clr-card); border: 1px solid var(--clr-border); border-radius: var(--radius-md); padding: 24px; height: fit-content; }
-        .step-list { display: flex; flex-direction: column; gap: 16px; list-style: none; }
-        .step { display: flex; align-items: center; gap: 12px; color: var(--clr-text-mid); font-weight: 600; cursor: pointer; transition: var(--transition); }
-        .step.active { color: var(--clr-accent); }
-        .step-circle { width: 32px; height: 32px; border-radius: 50%; background: var(--clr-bg); border: 2px solid var(--clr-border); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; transition: var(--transition); }
-        .step.active .step-circle { background: var(--clr-accent-dim); border-color: var(--clr-accent); color: var(--clr-accent); }
+        .form-layout { display: grid; grid-template-columns: 200px 1fr 320px; gap: 40px; margin-top: 24px; position: relative; }
+        .scroll-spy { position: sticky; top: 120px; height: fit-content; padding: 0; background: transparent; border: none; }
+        .step-list { display: flex; flex-direction: column; gap: 32px; list-style: none; position: relative; padding-left: 10px; }
+        .step-list::before { content: ''; position: absolute; left: 24px; top: 16px; bottom: 16px; width: 1px; background: var(--clr-border); z-index: 0; }
+        .step { display: flex; align-items: center; gap: 20px; color: var(--clr-text-lo); font-weight: 500; cursor: pointer; transition: var(--transition); position: relative; z-index: 1; }
+        .step span { font-size: 0.88rem; letter-spacing: 0.3px; }
+        .step.active { color: var(--clr-accent); font-weight: 700; }
+        .step-circle { width: 28px; height: 28px; border-radius: 50%; background: var(--clr-bg); border: 1px solid var(--clr-border); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; transition: var(--transition); flex-shrink: 0; box-shadow: 0 0 0 4px var(--clr-bg); }
+        .step.active .step-circle { background: var(--clr-accent); border-color: var(--clr-accent); color: #fff; box-shadow: 0 0 20px var(--clr-accent-glow); }
+        .step:hover:not(.active) .step-circle { border-color: var(--clr-accent); color: var(--clr-accent); }
         .form-container { display: flex; flex-direction: column; gap: 32px; }
         .form-section { background: var(--clr-card); border: 1px solid var(--clr-border); border-radius: var(--radius-md); padding: 32px; animation: fadeInUp 0.5s ease-out both; }
         .section-header { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--clr-border); }
         .section-header h2 { font-size: 1.25rem; color: var(--clr-text-hi); display: flex; align-items: center; gap: 12px; }
         .section-header h2 i { color: var(--clr-accent); }
-        .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+        .input-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        .input-grid.vitals { grid-template-columns: repeat(3, 1fr); }
+        .input-grid.vitals-4 { grid-template-columns: repeat(4, 1fr); }
         .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group.full-width { grid-column: 1 / -1; }
         .form-group label { font-size: 0.88rem; font-weight: 700; color: var(--clr-text-hi); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
-        .form-control { background: #0f172a; border: 1px solid var(--clr-border); color: #ffffff; padding: 12px 16px; border-radius: 8px; font-family: inherit; font-size: 1rem; transition: var(--transition); }
-        .form-control:focus { outline: none; border-color: var(--clr-accent); box-shadow: 0 0 0 3px var(--clr-accent-dim); }
-        .form-control.error { border-color: #ef4444; }
+        .form-control { background: var(--clr-input-bg); border: 1px solid var(--clr-border); color: var(--clr-text-hi); padding: 12px 16px; border-radius: 8px; font-family: inherit; font-size: 1rem; transition: var(--transition); }
+        .form-control:focus { outline: none; border-color: var(--clr-accent); box-shadow: 0 0 0 3px var(--clr-accent-dim); background: var(--clr-surface); }
+        .form-control.error { border-color: var(--clr-danger); }
         .error-msg { color: #ef4444; font-size: 0.8rem; display: none; margin-top: 4px; }
         .pill-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
-        .pill { background: var(--clr-bg); border: 1px solid var(--clr-border); border-radius: 20px; padding: 8px 16px; font-size: 0.9rem; font-weight: 500; color: var(--clr-text-mid); cursor: pointer; transition: var(--transition); user-select: none; }
-        .pill:hover { border-color: var(--clr-accent); color: var(--clr-text); }
+        .pill { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: 20px; padding: 8px 16px; font-size: 0.9rem; font-weight: 500; color: var(--clr-text-mid); cursor: pointer; transition: var(--transition); user-select: none; }
+        .pill:hover { border-color: var(--clr-accent); color: var(--clr-accent); }
         .pill.active { background: var(--clr-accent); border-color: var(--clr-accent); color: #fff; }
-        .gender-options { display: flex; gap: 16px; }
-        .radio-card { flex: 1; position: relative; }
+        .gender-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; }
+        .radio-card { position: relative; }
         .radio-card input { position: absolute; opacity: 0; cursor: pointer; }
-        .radio-card label { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: var(--clr-bg); border: 1px solid var(--clr-border); border-radius: 8px; cursor: pointer; transition: var(--transition); font-weight: 500; color: var(--clr-text); font-size: 1rem; }
+        .radio-card label { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: 8px; cursor: pointer; transition: var(--transition); font-weight: 600; color: var(--clr-text-mid); font-size: 1rem; }
         .radio-card input:checked + label { background: var(--clr-accent-dim); border-color: var(--clr-accent); color: var(--clr-accent); }
+        .radio-card label:hover { border-color: var(--clr-accent); color: var(--clr-accent); }
+        /* Checkbox variant for history */
+        .radio-card input[type="checkbox"]:checked + label {
+            background: var(--clr-accent-dim);
+            border-color: var(--clr-accent);
+            color: var(--clr-accent);
+        }
         .form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
         .modal-content { background-color: var(--clr-card); margin: 10% auto; padding: 32px; border: 1px solid var(--clr-border); width: 80%; max-width: 600px; border-radius: var(--radius-lg); animation: fadeInUp 0.3s ease-out; }
@@ -125,7 +138,7 @@
         </nav>
 
         <div class="content-area">
-            <div class="form-layout" style="grid-template-columns: 200px 1fr 320px;">
+            <div class="form-layout">
                 <div class="scroll-spy">
                     <ul class="step-list">
                         <li class="step active" onclick="scrollToSec('sec-1')"><div class="step-circle">1</div><span>Patient Profile</span></li>
@@ -138,26 +151,17 @@
                     <div class="form-section" id="sec-1">
                         <div class="section-header"><h2><i class="fas fa-user"></i> Patient Profile</h2></div>
                         <div class="input-grid">
-                            <div class="form-group" style="grid-column: 1 / -1;">
-                                <label class="form-label">
-                                    <i class="fas fa-user"></i> Patient Name
-                                </label>
-                                <input 
-                                    type="text" 
-                                    id="patient-name"
-                                    placeholder="Enter patient's full name (optional)"
-                                    style="background:var(--clr-bg); border:1px solid var(--clr-border);
-                                           border-radius:10px; padding:12px 16px; color:var(--clr-text-hi);
-                                           font-size:0.9rem; width:100%; outline:none; box-sizing:border-box;"
-                                >
+                            <div class="form-group full-width">
+                                <label><i class="fas fa-user"></i> Patient Name</label>
+                                <input type="text" id="patient-name" placeholder="Enter patient's full name (optional)" class="form-control">
                             </div>
                             <div class="form-group">
-                                <label>Age *</label>
+                                <label><i class="fas fa-calendar-alt"></i> Age *</label>
                                 <input type="number" id="age" class="form-control" placeholder="Years" min="1" max="120">
                                 <span class="error-msg">Valid age is required</span>
                             </div>
                             <div class="form-group">
-                                <label>Blood Group</label>
+                                <label><i class="fas fa-droplet"></i> Blood Group</label>
                                 <select id="blood-group" class="form-control">
                                     <option value="">Unknown</option>
                                     <option value="A+">A+</option><option value="A-">A-</option>
@@ -166,11 +170,21 @@
                                     <option value="AB+">AB+</option><option value="AB-">AB-</option>
                                 </select>
                             </div>
-                            <div class="form-group" style="grid-column: 1 / -1;"><label>Biological Sex *</label></div>
-                            <div class="gender-options" style="grid-column: 1 / -1;">
-                                    <div class="radio-card"><input type="radio" name="gender" id="g-male" value="Male"><label for="g-male"><i class="fas fa-mars"></i> Male</label></div>
-                                    <div class="radio-card"><input type="radio" name="gender" id="g-female" value="Female"><label for="g-female"><i class="fas fa-venus"></i> Female</label></div>
-                                    <div class="radio-card"><input type="radio" name="gender" id="g-other" value="Other"><label for="g-other"><i class="fas fa-genderless"></i> Other</label></div>
+                            <div class="form-group full-width" style="margin-top: 8px;">
+                                <label>Biological Sex *</label>
+                                <div class="gender-options">
+                                    <div class="radio-card">
+                                        <input type="radio" name="gender" id="g-male" value="Male">
+                                        <label for="g-male"><i class="fas fa-mars"></i> Male</label>
+                                    </div>
+                                    <div class="radio-card">
+                                        <input type="radio" name="gender" id="g-female" value="Female">
+                                        <label for="g-female"><i class="fas fa-venus"></i> Female</label>
+                                    </div>
+                                    <div class="radio-card">
+                                        <input type="radio" name="gender" id="g-other" value="Other">
+                                        <label for="g-other"><i class="fas fa-genderless"></i> Other</label>
+                                    </div>
                                 </div>
                                 <span id="gender-error" class="error-msg">Please select gender</span>
                             </div>
@@ -179,30 +193,38 @@
 
                     <div class="form-section" id="sec-2">
                         <div class="section-header"><h2><i class="fas fa-heartbeat"></i> Clinical Vitals & History</h2></div>
-                        <div class="input-grid">
+                        <div class="input-grid vitals" style="margin-bottom: 24px;">
                             <div class="form-group"><label>Height (cm)</label><input type="number" id="height" class="form-control" placeholder="175"></div>
                             <div class="form-group"><label>Weight (kg)</label><input type="number" id="weight" class="form-control" placeholder="70"></div>
                             <div class="form-group"><label>BMI (Auto-calc)</label><input type="text" id="bmi" class="form-control" readonly placeholder="--"></div>
                         </div>
-                        <div class="input-grid" style="margin-top:24px;">
+                        <div class="input-grid vitals-4">
                             <div class="form-group"><label>Blood Pressure (Sys)</label><input type="number" id="bp-sys" class="form-control" placeholder="120"></div>
                             <div class="form-group"><label>Blood Pressure (Dia)</label><input type="number" id="bp-dia" class="form-control" placeholder="80"></div>
                             <div class="form-group"><label>Blood Sugar (mg/dL)</label><input type="number" id="blood-sugar" class="form-control" placeholder="95"></div>
                             <div class="form-group"><label>Heart Rate (BPM)</label><input type="number" id="heart-rate" class="form-control" placeholder="72"></div>
                         </div>
-                        <h3 style="margin-top: 32px; font-size: 1rem; color: var(--clr-text-hi); text-transform: uppercase; font-weight: 800;">Pre-existing Conditions</h3>
-                        <div class="gender-options" style="margin-top: 16px;">
-                            <div class="radio-card" style="padding:12px; border:1px solid var(--clr-border); border-radius:8px; display:flex; align-items:center; gap:8px;">
-                                <input type="checkbox" id="hist-heart" style="position:static; opacity:1; cursor:pointer;" class="form-control">
-                                <label for="hist-heart" style="border:none; padding:0; background:none;">Hypertension/Heart Issue</label>
-                            </div>
-                            <div class="radio-card" style="padding:12px; border:1px solid var(--clr-border); border-radius:8px; display:flex; align-items:center; gap:8px;">
-                                <input type="checkbox" id="hist-diabetes" style="position:static; opacity:1; cursor:pointer;" class="form-control">
-                                <label for="hist-diabetes" style="border:none; padding:0; background:none;">Diabetes</label>
-                            </div>
-                            <div class="radio-card" style="padding:12px; border:1px solid var(--clr-border); border-radius:8px; display:flex; align-items:center; gap:8px;">
-                                <input type="checkbox" id="hist-surgery" style="position:static; opacity:1; cursor:pointer;" class="form-control">
-                                <label for="hist-surgery" style="border:none; padding:0; background:none;">Recent Surgery</label>
+                        <div class="form-group full-width" style="margin-top: 32px;">
+                            <label style="color: var(--clr-text-mid); margin-bottom: 12px;">Pre-existing Conditions</label>
+                            <div class="gender-options">
+                                <div class="radio-card">
+                                    <input type="checkbox" id="hist-heart" class="form-control" style="display:none;">
+                                    <label for="hist-heart" style="justify-content: flex-start; padding: 12px 16px;">
+                                        <i class="fas fa-heart-pulse"></i> Hypertension/Heart Issue
+                                    </label>
+                                </div>
+                                <div class="radio-card">
+                                    <input type="checkbox" id="hist-diabetes" class="form-control" style="display:none;">
+                                    <label for="hist-diabetes" style="justify-content: flex-start; padding: 12px 16px;">
+                                        <i class="fas fa-droplet"></i> Diabetes
+                                    </label>
+                                </div>
+                                <div class="radio-card">
+                                    <input type="checkbox" id="hist-surgery" class="form-control" style="display:none;">
+                                    <label for="hist-surgery" style="justify-content: flex-start; padding: 12px 16px;">
+                                        <i class="fas fa-user-slash"></i> Recent Surgery
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -237,7 +259,7 @@
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" id="btn-clear" class="btn-view" style="padding: 12px 24px; font-size: 1rem;">Clear Form</button>
+                        <button type="button" id="btn-clear" class="btn-outline" style="padding: 12px 24px; font-size: 1rem;">Clear Form</button>
                         <button type="submit" id="btn-submit" class="btn-primary" style="padding: 12px 32px; font-size: 1rem;">Run Clinical Assessment <i class="fas fa-arrow-right"></i></button>
                     </div>
                 </form>
@@ -276,7 +298,7 @@
             <p style="color:var(--clr-text-mid); margin-bottom: 20px;">The AI detected overlapping probabilities. Please clarify to improve accuracy:</p>
             <div id="question-list"></div>
             <div class="modal-actions">
-                <button type="button" class="btn-view" onclick="closeRefinement()">Cancel</button>
+                <button type="button" class="btn-outline" onclick="closeRefinement()">Cancel</button>
                 <button type="button" class="btn-primary" onclick="submitRefinement()">Submit & Finalize</button>
             </div>
         </div>

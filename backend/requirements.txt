@@ -10,3 +10,4 @@ better-sqlite3-binary==0.0.0   # placeholder: actual DB driver used by Electron 
 
 # Optional (for model ops)
 black==24.3.0
+requests>=2.28.0
