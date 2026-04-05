@@ -1,5 +1,5 @@
 {
-  "total_feedbacks": 2,
+  "total_feedbacks": 3,
   "disease_scores": {
     "Malaria": {
       "correct": 1,
@@ -8,6 +8,12 @@
       "weight_modifier": 1.5
     },
     "Allergy": {
+      "correct": 1,
+      "total": 1,
+      "accuracy": 1.0,
+      "weight_modifier": 1.5
+    },
+    "Iron Deficiency Anemia": {
       "correct": 1,
       "total": 1,
       "accuracy": 1.0,
@@ -31,6 +37,11 @@
       "reliability": 1.0
     },
     "Runny Nose::Allergy": {
+      "correct": 1,
+      "total": 1,
+      "reliability": 1.0
+    },
+    "Headache::Iron Deficiency Anemia": {
       "correct": 1,
       "total": 1,
       "reliability": 1.0
@@ -60,6 +71,17 @@
         "Runny Nose"
       ],
       "session_id": "session-1775348469155"
+    },
+    {
+      "timestamp": "2026-04-05T03:36:28.277349",
+      "predicted": "Iron Deficiency Anemia",
+      "actual": null,
+      "is_correct": true,
+      "confidence": 23.0,
+      "symptoms": [
+        "Headache"
+      ],
+      "session_id": "session-1775360170132"
     }
   ]
 }
