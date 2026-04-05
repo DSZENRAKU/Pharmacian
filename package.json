@@ -6,10 +6,57 @@
   "main": "electron/desktop_main.js",
   "scripts": {
     "dev": "node electron/dev_launcher.js",
-    "start": "node electron/dev_launcher.js"
+    "start": "node electron/dev_launcher.js",
+    "build": "electron-builder build --win --publish never",
+    "package": "electron-builder build --win --dir"
+  },
+  "build": {
+    "appId": "com.pharmacian.app",
+    "productName": "Pharmacian",
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Pharmacian"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "bin/pharmacian_engine.exe",
+        "to": "bin/"
+      },
+      {
+        "from": "backend/data/",
+        "to": "backend/data/"
+      },
+      {
+        "from": "models/",
+        "to": "models/"
+      },
+      {
+        "from": "data/",
+        "to": "data/"
+      }
+    ],
+    "files": [
+      "electron/**/*",
+      "frontend/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ]
   },
   "devDependencies": {
-    "electron": "^31.2.0"
+    "@electron/rebuild": "^4.0.3",
+    "electron": "^31.2.0",
+    "electron-builder": "^24.13.3",
+    "electron-packager": "^17.1.2"
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",

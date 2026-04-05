@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:5000;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacian | AI Prediction Results</title>
+    <meta name="description" content="Pharmacian Assessment Results - Detailed AI diagnostic report, clinical rationale, and health risk analysis for patients.">
+    <title>Pharmacian | Assessment Results</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -160,8 +161,10 @@
     <!-- Minimal top bar -->
     <div class="result-topbar">
         <a href="/dashboard" class="logo">
-            <img src="/static/logo.png" alt="Pharmacian">
-            <span>Pharma<span>cian</span></span>
+            <img src="/static/logo.png" alt="Pharmacian Clinical Platform">
+            <h1 style="font-size: 1.25rem; margin: 0; color: inherit; display: inline-flex; align-items: center; font-weight: inherit;">
+                Pharma<span>cian</span>
+            </h1>
         </a>
         <div class="user-menu">
             <a href="/dashboard" class="btn-back"><i class="fas fa-arrow-left"></i> Dashboard</a>
@@ -313,6 +316,17 @@
     <!-- Bottom Actions -->
     <div class="bottom-grid">
         
+        <!-- Drug Interaction Safety Panel -->
+        <div id="safety-panel" class="glass-panel" style="display:none; margin-bottom: 24px; border-left: 5px solid #ffab40; background: rgba(255,171,64,0.05); padding: 25px;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                <i class="fas fa-shield-virus" style="color:#ffab40; font-size:1.5rem;"></i>
+                <h3 style="margin:0; font-size:1.1rem; color:#fff;">Clinical Safety: Drug Interactions</h3>
+            </div>
+            <div id="safety-warnings-list" style="font-size:0.9rem; color:var(--clr-text-mid); line-height:1.6;">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
         <!-- 5. Doctor's Recommendation Box -->
         <div class="recommendation">
             <i class="fas fa-stethoscope rec-icon"></i>
@@ -412,8 +426,18 @@
             initFeedbackPanel(
                 primaryPred.disease,
                 primaryPred.rl_adjusted_probability || primaryPred.probability,
-                symptoms
+                 ai.rationale || []
             );
+        }
+
+        // Update Safety Panel if interactions exist
+        const safetyPanel = document.getElementById('safety-panel');
+        const safetyList = document.getElementById('safety-warnings-list');
+        if (ai.interactions && ai.interactions.length > 0) {
+            safetyPanel.style.display = 'block';
+            safetyList.innerHTML = `<ul style="margin:0; padding-left:20px;">` + 
+                ai.interactions.map(w => `<li><strong style="color:#fff;">[${w.severity}]</strong> ${w.note}</li>`).join('') +
+                `</ul>`;
         }
     }
     

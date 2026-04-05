@@ -128,7 +128,7 @@ def get_feedback_stats() -> Dict:
         "diseases_tracked": len(store["disease_scores"]),
         "top_accurate": [{"disease": d, "accuracy": round(a * 100, 1)} for d, a in top_accurate],
         "needs_improvement": [{"disease": d, "accuracy": round(a * 100, 1)} for d, a in needs_improvement],
-        "recent_feedback_count": len([f for f in store["feedback_log"][-50:] if True])
+        "recent_feedback_count": len(store["feedback_log"][-50:])
     }
 
 def apply_rl_boost(predictions: List[Dict]) -> List[Dict]:

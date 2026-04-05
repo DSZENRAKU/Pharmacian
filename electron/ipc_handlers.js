@@ -107,7 +107,7 @@ function registerIpcHandlers() {
   handle("db:getPatients",       (filters)                  => db.getPatients(filters));
   handle("db:getPatientById",   (id)                       => db.getPatientById(id));
   handle("db:updatePatient",    (id, data)                 => db.updatePatient(id, data));
-  handle("db:deletePatient",    (id)                       => db.softDeletePatient(id));
+  handle("db:deletePatient",    (id)                       => db.deletePatient(id));
 
   // ── Predictions ───────────────────────────────────────────────────────────
   handle("db:insertPrediction",      (patientId, predData) => {
@@ -260,7 +260,7 @@ function registerIpcHandlers() {
       const decryptedBuffer = security.decryptBuffer(encryptedData, password);
 
       // Verify it's a valid SQLite file by checking the header
-      if (decryptedBuffer.subarray(0, 15).toString() !== "SQLite format 3") {
+      if (decryptedBuffer.subarray(0, 16).toString('ascii').replace(/\0/g, '') !== "SQLite format 3") {
         throw new Error("Invalid backup: Not a valid Pharmacian database.");
       }
 

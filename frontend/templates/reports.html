@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:5000;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Pharmacian Clinical Reports - Exportable patient diagnostic history and statistical clinical data.">
     <title>Pharmacian | Clinical Reports</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -100,6 +101,7 @@
     <aside class="sidebar">
         <a href="/dashboard" class="nav-link"><i class="fas fa-grid-2"></i> <span>Dashboard</span></a>
         <a href="/diagnose"  class="nav-link"><i class="fas fa-stethoscope"></i> <span>New Assessment</span></a>
+        <a href="/drug-interactions" class="nav-link"><i class="fas fa-pills"></i> <span>Drug Interactions</span></a>
         <a href="/patients"  class="nav-link"><i class="fas fa-user-group"></i> <span>All Patients</span></a>
         <a href="/reports"   class="nav-link active"><i class="fas fa-file-medical"></i> <span>Reports</span></a>
         <a href="/settings"  class="nav-link"><i class="fas fa-cog"></i> <span>Settings</span></a>
@@ -110,8 +112,10 @@
         <!-- Top Navbar -->
         <nav class="top-bar">
             <a href="/dashboard" class="logo">
-                <img src="/static/logo.png" alt="Pharmacian">
-                <span>Pharma<span>cian</span></span>
+                <img src="/static/logo.png" alt="Pharmacian Clinical Platform">
+                <h1 style="font-size: 1.25rem; margin: 0; color: inherit; display: inline-flex; align-items: center; font-weight: inherit;">
+                    Pharma<span>cian</span>
+                </h1>
             </a>
             <div class="page-title">Clinical Reports</div>
             <div class="user-menu">

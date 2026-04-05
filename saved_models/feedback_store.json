@@ -1,7 +1,13 @@
 {
-  "total_feedbacks": 1,
+  "total_feedbacks": 2,
   "disease_scores": {
     "Malaria": {
+      "correct": 1,
+      "total": 1,
+      "accuracy": 1.0,
+      "weight_modifier": 1.5
+    },
+    "Allergy": {
       "correct": 1,
       "total": 1,
       "accuracy": 1.0,
@@ -15,6 +21,16 @@
       "reliability": 1.0
     },
     "chills::Malaria": {
+      "correct": 1,
+      "total": 1,
+      "reliability": 1.0
+    },
+    "Shivering::Allergy": {
+      "correct": 1,
+      "total": 1,
+      "reliability": 1.0
+    },
+    "Runny Nose::Allergy": {
       "correct": 1,
       "total": 1,
       "reliability": 1.0
@@ -32,6 +48,18 @@
         "chills"
       ],
       "session_id": ""
+    },
+    {
+      "timestamp": "2026-04-05T00:21:47.798608",
+      "predicted": "Allergy",
+      "actual": null,
+      "is_correct": true,
+      "confidence": 24.0,
+      "symptoms": [
+        "Shivering",
+        "Runny Nose"
+      ],
+      "session_id": "session-1775348469155"
     }
   ]
 }

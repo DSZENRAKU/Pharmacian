@@ -7,6 +7,7 @@ from prediction_engine import predict_case, sanitize_medications, train_pipeline
 from response_formatting import error_response, refine_response, success_response
 from model_container import load_state_from_disk
 from reinforcement_engine import record_feedback, get_feedback_stats, apply_rl_boost
+from drug_interaction import get_multiple_interactions
 
 from dotenv import load_dotenv
 load_dotenv() # Load GEMINI_API_KEY from .env
@@ -61,6 +62,11 @@ def reports():
 @bp.route("/settings")
 def settings():
     return render_template("settings.html")
+
+
+@bp.route("/drug-interactions")
+def drug_interactions():
+    return render_template("drug-interactions.html")
 
 
 @bp.route("/api/dashboard")
@@ -163,6 +169,12 @@ def predict():
     # Apply Reinforcement Learning boost to re-rank predictions
     if "predictions" in payload and payload["predictions"]:
         payload["predictions"] = apply_rl_boost(payload["predictions"])
+        
+    # Check for drug-drug interactions for the final report
+    if medications:
+        med_names = [m.get("name", "").strip() for m in medications if m.get("name")]
+        payload["interactions"] = get_multiple_interactions(med_names)
+
     body, code = success_response(payload)
     return jsonify(body), code
 
@@ -210,6 +222,18 @@ def submit_feedback():
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/retrain", methods=["POST"])
+def retrain():
+    try:
+        state = current_app.extensions.get("model_state")
+        if not state:
+            return jsonify({"error": "Internal server configuration error."}), 500
+        train_pipeline(state)
+        return jsonify({"status": "ok", "message": "Models retrained successfully."}), 200
+    except Exception as e:
+        return jsonify({"error": "Retraining failed.", "detail": str(e)}), 500
 
 
 @bp.route("/api/chat", methods=["POST"])
@@ -283,3 +307,42 @@ def api_chat():
         traceback.print_exc()
         print(f"Chat Exception: {str(e)}")
         return jsonify({"error": "Clinical Assistant is currently offline."}), 500
+
+
+@bp.route("/api/feedback-stats")
+def feedback_stats():
+    try:
+        stats = get_feedback_stats()
+        return jsonify(stats), 200
+    except Exception as e:
+        return jsonify({"error": "Could not retrieve feedback stats.", "detail": str(e)}), 500
+
+
+@bp.route("/api/auth", methods=["POST"])
+def web_auth():
+    data = request.get_json(force=True, silent=True) or {}
+    username = str(data.get("username", "")).strip()
+    password = str(data.get("password", "")).strip()
+    ALLOWED = {"admin": "admin123", "guest": "guest"}
+    if ALLOWED.get(username) == password:
+        role = "admin" if username == "admin" else "clinician"
+        return jsonify({"ok": True, "username": username, "role": role}), 200
+    return jsonify({"ok": False, "error": "Invalid credentials"}), 401
+
+@bp.route("/api/check-interactions", methods=["POST"])
+def check_interactions():
+    """Checks for drug-drug interactions using OpenFDA."""
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        meds = data.get("medications", [])
+        if not meds or not isinstance(meds, list):
+            return jsonify({"status": "ok", "warnings": []}), 200
+        
+        # medications is expected to be a list of dicts like {name: '...', dose: '...'}
+        med_names = [m.get("name", "").strip() for m in meds if m.get("name")]
+        
+        warnings = get_multiple_interactions(med_names)
+        return jsonify({"status": "ok", "warnings": warnings}), 200
+        
+    except Exception as e:
+        return jsonify({"error": "Failed to check interactions.", "detail": str(e)}), 500

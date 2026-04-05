@@ -1,0 +1,151 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                 ║
+║                    🩺 PHARMACIAN - QUICK START CARD 🩺                          ║
+║                                                                                 ║
+║                  Clinical Disease Assessment System - v1.0.0                   ║
+║                                                                                 ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  ⚡ FASTEST WAY TO RUN (Windows)                                                │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  1. Find and double-click: run_app.cmd                                          │
+│                                                                                  │
+│     That's it! ✨ Auto-installer will:                                          │
+│     • Check Node.js & Python                                                    │
+│     • Install all dependencies                                                  │
+│     • Launch the app                                                            │
+│                                                                                  │
+│  ⏱️  First time: 5-10 minutes  |  Subsequent times: <1 minute                   │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  ⚡ FASTEST WAY TO RUN (Mac/Linux)                                              │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  1. Open Terminal in project directory                                          │
+│                                                                                  │
+│  2. Run:                                                                        │
+│     chmod +x run_app.sh                                                        │
+│     ./run_app.sh                                                               │
+│                                                                                  │
+│  ✨ Auto-installer will handle everything!                                      │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  📋 AVAILABLE LAUNCH METHODS                                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  METHOD 1 (Recommended):   run_app.cmd            (Windows - click to run)      │
+│  METHOD 2 (Alternative):   run_app.ps1            (Windows - PowerShell)        │
+│  METHOD 3 (Mac/Linux):     run_app.sh             (Mac/Linux)                  │
+│  METHOD 4 (Manual):        npm run dev            (All platforms)               │
+│  METHOD 5 (Legacy):        launch_pharmacian.cmd  (Windows - old launcher)     │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  ✅ PREREQUISITES (First-Time Setup)                                            │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ☐ Node.js 16+        → https://nodejs.org/                                    │
+│  ☐ Python 3.10+       → https://www.python.org/                                │
+│  ☐ ~500MB disk space  for models and dependencies                              │
+│                                                                                  │
+│  ℹ️  The launch scripts will check if these are installed!                      │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  🌐 SERVICES RUNNING AFTER LAUNCH                                               │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  Frontend:        Electron Window        (Graphical UI)                         │
+│  Backend API:     http://localhost:5000  (Disease Prediction Engine)            │
+│  Database:        Local SQLite           (Patient Records)                      │
+│                                                                                  │
+│  ⏱️  Startup time: ~3-5 seconds after clicking                                   │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  🎯 WHAT TO DO FIRST                                                            │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  1. Launch the app using one of the methods above                               │
+│                                                                                  │
+│  2. On the home page, click "New Assessment"                                    │
+│                                                                                  │
+│  3. Fill in patient information:                                                │
+│     • Age, Gender, Weight                                                       │
+│     • Medical History (checkboxes)                                              │
+│     • Current Medications                                                       │
+│     • Symptoms (text input + voice option)                                      │
+│                                                                                  │
+│  4. Click "Diagnose" to get AI predictions                                      │
+│                                                                                  │
+│  5. View results with:                                                          │
+│     • Disease predictions & confidence scores                                   │
+│     • Explainable reasoning (why AI picked this)                                │
+│     • Drug interaction warnings (FDA-backed)                                    │
+│     • Risk factors & recommendations                                            │
+│     • Printable PDF report                                                      │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  🛑 STOPPING THE APP                                                            │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  Option 1: Press Ctrl + C in the terminal                                       │
+│  Option 2: Close the Electron window (X button)                                 │
+│                                                                                  │
+│  The Flask backend will automatically shut down.                                │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  ⚠️  TROUBLESHOOTING                                                            │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ❌ "Node.js not found"       → Install from https://nodejs.org/               │
+│  ❌ "Python not found"        → Install from https://www.python.org/           │
+│  ❌ "Port 5000 already in use"→ Close other apps using port 5000               │
+│  ❌ "App won't start"         → Regenerate models: python train_...            │
+│  ❌ "Can't find app"          → Navigate to project folder first               │
+│                                                                                  │
+│  For detailed help → See RUN_GUIDE.md                                           │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  📖 DOCUMENTATION FILES                                                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  README.md              → Full project info + judges Q&A                        │
+│  RUN_GUIDE.md           → Detailed setup & troubleshooting                      │
+│  LAUNCH_OPTIONS.md      → All available launch methods                          │
+│  QUICKSTART.txt         → This file                                             │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                 ║
+║  🚀 Ready? Double-click run_app.cmd and enjoy Pharmacian!                      ║
+║                                                                                 ║
+║  Team: DarkSlayers | Lead Dev: Omkar Kawale | April 2026                       ║
+║                                                                                 ║
+╚════════════════════════════════════════════════════════════════════════════════╝

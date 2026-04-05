@@ -61,21 +61,6 @@ class SymptomTranslator:
 
 
 def train_pipeline(state: ModelState) -> None:
-    logging.info("Checking for existing models...")
-    
-    if all(p.exists() for p in [RF_MODEL_PATH, DT_MODEL_PATH, NB_MODEL_PATH, SYMPTOMS_LIST_PATH]):
-        try:
-            state.random_forest = joblib.load(RF_MODEL_PATH)
-            state.decision_tree = joblib.load(DT_MODEL_PATH)
-            state.naive_bayes = joblib.load(NB_MODEL_PATH)
-            state.symptoms_list = joblib.load(SYMPTOMS_LIST_PATH)
-            # We still need df_train for refinement questions (to get patterns)
-            state.df_train = pd.read_csv(TRAINING_DATA_PATH)
-            logging.info("Pre-trained models loaded successfully.")
-            return
-        except Exception as e:
-            logging.warning(f"Failed to load pre-trained models: {e}. Re-training...")
-
     logging.info("Training pipeline started.")
     df_train = pd.read_csv(TRAINING_DATA_PATH)
     symptoms_list = df_train.columns[:-1].tolist()
@@ -199,7 +184,7 @@ def predict_health_risks(profile: Dict) -> List[Dict]:
         risks.append(
             {
                 "condition": "Cardiovascular Disease",
-                "risk": "Moderate",
+                "risk": "Medium",
                 "risk_score": min(10, h_score * 2),
                 "note": "Monitor daily BP and maintain active cardio routine.",
             }
@@ -231,7 +216,7 @@ def predict_health_risks(profile: Dict) -> List[Dict]:
     if profile.get("history_allergy") and profile.get("patient_age", 99) < 30:
         risks.append({
             "condition": "Allergy Complications",
-            "risk": "Moderate",
+            "risk": "Medium",
             "risk_score": 6,
             "note": "Allergy risk elevated in younger demographic profile."
         })

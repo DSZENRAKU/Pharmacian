@@ -236,24 +236,17 @@ function getAllPatients(page = 1, limit = 10, filters = {}) {
 
     // Risk level JOIN filter
     const riskJoin = risk_level
-      ? `INNER JOIN (
-           SELECT patient_id, risk_level,
-                  ROW_NUMBER() OVER (PARTITION BY patient_id ORDER BY created_at DESC) AS rn
-           FROM predictions
-         ) latest_pred ON latest_pred.patient_id = p.id AND latest_pred.rn = 1 AND latest_pred.risk_level = @risk_level`
-      : `LEFT JOIN (
-           SELECT patient_id, risk_level, primary_disease, created_at,
-                  ROW_NUMBER() OVER (PARTITION BY patient_id ORDER BY created_at DESC) AS rn
-           FROM predictions
-         ) latest_pred ON latest_pred.patient_id = p.id AND latest_pred.rn = 1`;
+      ? `INNER JOIN predictions latest_pred ON latest_pred.id = (
+           SELECT id FROM predictions WHERE patient_id = p.id AND risk_level = @risk_level ORDER BY created_at DESC LIMIT 1
+         )`
+      : `LEFT JOIN predictions latest_pred ON latest_pred.id = (
+           SELECT id FROM predictions WHERE patient_id = p.id ORDER BY created_at DESC LIMIT 1
+         )`;
 
     if (risk_level) params.risk_level = risk_level;
 
-    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "WHERE p.deleted_at IS NULL";
-    // Always exclude soft-deleted patients
-    const baseWhere = where === `WHERE p.deleted_at IS NULL`
-      ? `WHERE p.deleted_at IS NULL`
-      : `${where} AND p.deleted_at IS NULL`;
+    conditions.push("p.deleted_at IS NULL");
+    const baseWhere = `WHERE ${conditions.join(" AND ")}`;
     const offset = (page - 1) * limit;
 
     const countQuery = `SELECT COUNT(*) AS c FROM patients p ${riskJoin} ${baseWhere}`;
@@ -339,16 +332,6 @@ function deletePatient(id) {
   }
 }
 
-function softDeletePatient(id) {
-  try {
-    const result = getDb().prepare(
-        "UPDATE patients SET deleted_at = datetime('now') WHERE id = ?"
-    ).run(id);
-    return result.changes > 0;
-  } catch (err) {
-    throw new DbError("softDeletePatient", err);
-  }
-}
 
 // ─────────────────────────────────────────────
 // 3. PREDICTIONS
@@ -509,6 +492,9 @@ function getRecentAssessments(limit = 8) {
  */
 function hashPassword(password, salt = null) {
   const s = salt || crypto.randomBytes(16).toString("hex");
+  // NOTE: Uses 1000 iterations for speed. security_utils.js uses 100000 iterations for
+  // backup encryption (AES-256-GCM key). These are intentionally separate: one is for
+  // fast local login auth, the other is for high-security file encryption. Do not merge.
   const hash = crypto.pbkdf2Sync(password, s, 1000, 64, "sha512").toString("hex");
   return { hash, salt: s };
 }
@@ -638,5 +624,4 @@ module.exports = {
   clearPasswordChangeFlag,
   getWeeklyTrend,
   getPatients,
-  softDeletePatient,
 };

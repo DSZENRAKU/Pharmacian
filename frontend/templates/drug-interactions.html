@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-size 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:5000;">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Drug Interaction Checker - Real-time FDA-backed medication interaction detection for clinical safety.">
+    <title>Pharmacian | Drug Interaction Checker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/titlebar.js"></script>
+    <script src="/static/db_client.js"></script>
+    <style>
+        body { display: flex; }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--clr-border);
+        }
+        .page-header h1 {
+            font-size: 2rem;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            color: var(--clr-text-hi);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .page-header p {
+            color: var(--clr-text-mid);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        /* Main Container */
+        .drug-checker-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+
+        /* Drug Input Panel */
+        .drug-input-panel {
+            background: var(--clr-card);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md);
+            padding: 32px;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .panel-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--clr-border);
+        }
+
+        .panel-header h2 {
+            font-size: 1.1rem;
+            color: var(--clr-text-hi);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+        }
+
+        .panel-header p {
+            font-size: 0.85rem;
+            color: var(--clr-text-mid);
+            margin: 12px 0 0 0;
+        }
+
+        /* Drug Input Form */
+        .drug-input-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .drug-input-form input {
+            flex: 1;
+            background: var(--clr-input-bg);
+            border: 1px solid var(--clr-border);
+            color: var(--clr-text-hi);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .drug-input-form input:focus {
+            border-color: var(--clr-accent);
+            box-shadow: 0 0 0 3px var(--clr-accent-dim);
+            background: var(--clr-surface);
+        }
+
+        .drug-input-form input::placeholder {
+            color: var(--clr-text-lo);
+        }
+
+        .drug-input-form button {
+            background: var(--clr-accent);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .drug-input-form button:hover {
+            filter: brightness(1.12);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--clr-accent-glow);
+        }
+
+        .drug-input-form button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Drug List */
+        .drug-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .drug-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .drug-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .drug-list::-webkit-scrollbar-thumb {
+            background: var(--clr-scrollbar);
+            border-radius: 3px;
+        }
+
+        .drug-list::-webkit-scrollbar-thumb:hover {
+            background: var(--clr-text-lo);
+        }
+
+        .drug-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--clr-surface);
+            border: 1px solid var(--clr-border);
+            border-radius: 8px;
+            transition: var(--transition);
+            gap: 12px;
+        }
+
+        .drug-item:hover {
+            background: var(--clr-card-hover);
+            border-color: var(--clr-accent);
+        }
+
+        .drug-item-name {
+            font-weight: 600;
+            color: var(--clr-accent);
+            font-size: 0.95rem;
+        }
+
+        .drug-item-remove {
+            background: var(--clr-danger-dim);
+            border: 1px solid var(--clr-danger);
+            color: var(--clr-danger);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .drug-item-remove:hover {
+            background: var(--clr-danger);
+            color: #fff;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--clr-text-mid);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--clr-text-lo);
+            margin-bottom: 12px;
+            display: block;
+            opacity: 0.5;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-check-interactions {
+            flex: 1;
+            background: linear-gradient(135deg, var(--clr-accent), #0099cc);
+            color: #fff;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-check-interactions:hover:not(:disabled) {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--clr-accent-glow);
+        }
+
+        .btn-check-interactions:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-clear-drugs {
+            background: transparent;
+            border: 1px solid var(--clr-border);
+            color: var(--clr-text-mid);
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-clear-drugs:hover {
+            border-color: var(--clr-accent);
+            color: var(--clr-accent);
+            background: var(--clr-accent-dim);
+        }
+
+        /* Results Panel */
+        .results-panel {
+            background: var(--clr-card);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md);
+            padding: 32px;
+            animation: fadeInUp 0.5s ease-out 0.1s both;
+            display: none;
+        }
+
+        .results-panel.active {
+            display: block;
+        }
+
+        .results-panel.loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+        }
+
+        .loading-spinner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .loading-spinner .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--clr-border);
+            border-top-color: var(--clr-accent);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
+        /* Result Content */
+        .results-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--clr-border);
+        }
+
+        .results-header i {
+            font-size: 1.4rem;
+            color: var(--clr-accent);
+        }
+
+        .results-header h3 {
+            font-size: 1.1rem;
+            color: var(--clr-text-hi);
+            margin: 0;
+        }
+
+        .results-summary {
+            background: var(--clr-surface);
+            border-left: 4px solid var(--clr-accent);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .summary-stat {
+            text-align: center;
+        }
+
+        .summary-stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--clr-accent);
+        }
+
+        .summary-stat-label {
+            font-size: 0.75rem;
+            color: var(--clr-text-mid);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        /* Interaction Items */
+        .interactions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .interaction-item {
+            background: var(--clr-surface);
+            border: 1px solid var(--clr-border);
+            border-radius: 8px;
+            padding: 16px;
+            transition: var(--transition);
+        }
+
+        .interaction-item:hover {
+            border-color: var(--clr-accent-glow);
+        }
+
+        .interaction-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .severity-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .severity-contraindicated {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        .severity-major {
+            background: #ffab40;
+            color: #000;
+        }
+
+        .severity-moderate {
+            background: #ffa726;
+            color: #fff;
+        }
+
+        .severity-minor {
+            background: #29b6f6;
+            color: #fff;
+        }
+
+        .interaction-type {
+            font-size: 0.85rem;
+            color: var(--clr-text-mid);
+        }
+
+        .interaction-note {
+            font-size: 0.9rem;
+            color: var(--clr-text-hi);
+            line-height: 1.5;
+        }
+
+        .no-interactions {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--clr-text-mid);
+        }
+
+        .no-interactions i {
+            font-size: 3rem;
+            color: #2ed573;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        /* Error State */
+        .error-state {
+            background: var(--clr-danger-dim);
+            border: 1px solid var(--clr-danger);
+            border-radius: 8px;
+            padding: 20px;
+            color: var(--clr-danger);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .error-state i {
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .error-state-text {
+            flex: 1;
+        }
+
+        .error-state-text strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* History Card */
+        .history-card {
+            background: var(--clr-card);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        .history-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--clr-text-hi);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--clr-surface);
+            border: 1px solid var(--clr-border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .history-item:hover {
+            background: var(--clr-card-hover);
+            border-color: var(--clr-accent);
+        }
+
+        .history-drugs {
+            color: var(--clr-accent);
+            font-weight: 600;
+        }
+
+        .history-time {
+            color: var(--clr-text-lo);
+            font-size: 0.75rem;
+        }
+
+        .history-empty {
+            text-align: center;
+            padding: 24px;
+            color: var(--clr-text-mid);
+            font-size: 0.85rem;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1200px) {
+            .drug-checker-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .drug-input-form {
+                flex-direction: column;
+            }
+
+            .drug-input-form button {
+                width: 100%;
+            }
+
+            .results-summary {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .summary-stat {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+        <a href="/dashboard" class="nav-link"><i class="fas fa-grid-2"></i> <span>Dashboard</span></a>
+        <a href="/diagnose" class="nav-link"><i class="fas fa-stethoscope"></i> <span>New Assessment</span></a>
+        <a href="/drug-interactions" class="nav-link active"><i class="fas fa-pills"></i> <span>Drug Interactions</span></a>
+        <a href="/patients" class="nav-link"><i class="fas fa-user-group"></i> <span>All Patients</span></a>
+        <a href="/reports" class="nav-link"><i class="fas fa-file-medical"></i> <span>Reports</span></a>
+        <a href="/settings" class="nav-link"><i class="fas fa-cog"></i> <span>Settings</span></a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Navbar -->
+        <nav class="top-bar">
+            <a href="/dashboard" class="logo">
+                <img src="/static/logo.png" alt="Pharmacian Clinical Platform">
+                <h1 style="font-size: 1.25rem; margin: 0; color: inherit; display: inline-flex; align-items: center; font-weight: inherit;">
+                    Pharma<span>cian</span>
+                </h1>
+            </a>
+            <div class="user-menu">
+                <div class="user-badge">
+                    <div class="user-avatar" id="nav-user-initials">DC</div>
+                    <div>
+                        <div class="user-name" id="nav-user-name">Clinician</div>
+                        <div class="user-role" id="nav-user-role">Clinical Staff</div>
+                    </div>
+                </div>
+                <button class="btn-logout">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Page Content -->
+        <div class="content-area">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1><i class="fas fa-shield-virus"></i> Drug Interaction Checker</h1>
+                    <p>Real-time FDA-backed medication interaction detection and clinical safety verification</p>
+                </div>
+            </div>
+
+            <!-- Main Container -->
+            <div class="drug-checker-container">
+                <!-- Left Panel: Drug Input -->
+                <div class="drug-input-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-capsules"></i> Add Medications</h2>
+                        <p>Search and add 2 or more medications to check for interactions</p>
+                    </div>
+
+                    <!-- Drug Input Form -->
+                    <div class="drug-input-form">
+                        <input type="text" id="drug-input" placeholder="e.g. Aspirin, Ibuprofen, Warfarin..." autocomplete="off">
+                        <button type="button" id="btn-add-drug"><i class="fas fa-plus"></i> Add</button>
+                    </div>
+
+                    <!-- Drug List or Empty State -->
+                    <div id="drug-list-container">
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>No medications added yet</p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button type="button" class="btn-check-interactions" id="btn-check-interactions" disabled>
+                            <i class="fas fa-search"></i> Check Interactions
+                        </button>
+                        <button type="button" class="btn-clear-drugs" id="btn-clear-drugs">Clear All</button>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Results -->
+                <div>
+                    <!-- Results Panel -->
+                    <div class="results-panel" id="results-panel">
+                        <div class="loading-spinner" id="loading-spinner" style="display: none;">
+                            <div class="spinner"></div>
+                            <p>Querying FDA interaction database...</p>
+                        </div>
+
+                        <div id="results-content" style="display: none;">
+                            <!-- Results will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- History Card -->
+                    <div class="history-card">
+                        <h3><i class="fas fa-history"></i> Recent Checks</h3>
+                        <div class="history-list" id="history-list">
+                            <div class="history-empty">No history yet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/nav.js"></script>
+    <script>
+    // ── Drug Interaction Checker ─────────────────────────────────────────────
+
+    const STORAGE_KEY = 'pharma_drug_check_history';
+    const MAX_HISTORY = 10;
+    let drugList = [];
+
+    const drugInput = document.getElementById('drug-input');
+    const btnAddDrug = document.getElementById('btn-add-drug');
+    const btnCheckInteractions = document.getElementById('btn-check-interactions');
+    const btnClearDrugs = document.getElementById('btn-clear-drugs');
+    const drugListContainer = document.getElementById('drug-list-container');
+    const resultsPanel = document.getElementById('results-panel');
+    const resultsContent = document.getElementById('results-content');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const historyList = document.getElementById('history-list');
+
+    // Add drug to list (button click or Enter key)
+    btnAddDrug.addEventListener('click', () => addDrug());
+    drugInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addDrug();
+    });
+
+    function addDrug() {
+        const drugName = (drugInput.value || '').trim();
+        if (!drugName) {
+            alert('Please enter a medication name');
+            return;
+        }
+
+        if (drugList.includes(drugName)) {
+            alert(`${drugName} is already added`);
+            drugInput.value = '';
+            return;
+        }
+
+        drugList.push(drugName);
+        drugInput.value = '';
+        renderDrugList();
+        updateCheckButton();
+    }
+
+    function removeDrug(index) {
+        drugList.splice(index, 1);
+        renderDrugList();
+        updateCheckButton();
+    }
+
+    function renderDrugList() {
+        if (drugList.length === 0) {
+            drugListContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No medications added yet</p>
+                </div>
+            `;
+            return;
+        }
+
+        drugListContainer.innerHTML = `
+            <div class="drug-list">
+                ${drugList.map((drug, idx) => `
+                    <div class="drug-item">
+                        <span class="drug-item-name">${drug}</span>
+                        <button class="drug-item-remove" onclick="removeDrug(${idx})">
+                            <i class="fas fa-trash-alt"></i> Remove
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    function updateCheckButton() {
+        btnCheckInteractions.disabled = drugList.length < 2;
+    }
+
+    // Check interactions
+    btnCheckInteractions.addEventListener('click', checkInteractions);
+
+    async function checkInteractions() {
+        if (drugList.length < 2) {
+            alert('Please add at least 2 medications');
+            return;
+        }
+
+        // Show loading state
+        resultsPanel.classList.add('active');
+        resultsPanel.classList.add('loading');
+        loadingSpinner.style.display = 'flex';
+        resultsContent.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/check-interactions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    medications: drugList.map(name => ({ name }))
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to check interactions');
+            }
+
+            displayResults(data.warnings || []);
+            addToHistory(drugList, data.warnings || []);
+
+        } catch (error) {
+            console.error('Interaction check error:', error);
+            resultsContent.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <div class="error-state-text">
+                        <strong>Error</strong>
+                        ${error.message}
+                    </div>
+                </div>
+            `;
+        } finally {
+            resultsPanel.classList.remove('loading');
+            loadingSpinner.style.display = 'none';
+            resultsContent.style.display = 'block';
+        }
+    }
+
+    function displayResults(warnings) {
+        let html = `
+            <div class="results-header">
+                <i class="fas fa-flask-vial"></i>
+                <h3>Interaction Report</h3>
+            </div>
+            
+            <div class="results-summary">
+                <div class="summary-stat">
+                    <div class="summary-stat-value">${drugList.length}</div>
+                    <div class="summary-stat-label">Medications</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="summary-stat-value">${warnings.length}</div>
+                    <div class="summary-stat-label">Interactions Found</div>
+                </div>
+            </div>
+        `;
+
+        if (warnings.length === 0) {
+            html += `
+                <div class="no-interactions">
+                    <i class="fas fa-check-circle"></i>
+                    <strong>No Major Interactions Detected</strong>
+                    <p style="margin: 8px 0 0 0; font-size: 0.85rem;">No significant clinical interactions found in FDA records for this combination.</p>
+                </div>
+            `;
+        } else {
+            html += '<div class="interactions-list">';
+            warnings.forEach(w => {
+                const severityClass = `severity-${w.severity.toLowerCase().replace(' ', '-')}`;
+                html += `
+                    <div class="interaction-item">
+                        <div class="interaction-header">
+                            <span class="severity-badge ${severityClass}">${w.severity}</span>
+                            ${w.type ? `<span class="interaction-type">${w.type}</span>` : ''}
+                        </div>
+                        <div class="interaction-note">
+                            ${w.note || 'Interaction detected'}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+
+        resultsContent.innerHTML = html;
+    }
+
+    // History Management
+    function loadHistory() {
+        try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function saveHistory(history) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)));
+        renderHistory();
+    }
+
+    function addToHistory(drugs, interactions) {
+        const history = loadHistory();
+        history.unshift({
+            drugs,
+            warningCount: interactions.length,
+            timestamp: new Date().toISOString()
+        });
+        saveHistory(history);
+    }
+
+    function renderHistory() {
+        const history = loadHistory();
+
+        if (history.length === 0) {
+            historyList.innerHTML = '<div class="history-empty">No history yet</div>';
+            return;
+        }
+
+        historyList.innerHTML = history.map((item, idx) => {
+            const date = new Date(item.timestamp);
+            const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+            return `
+                <div class="history-item" onclick="loadFromHistory(${idx})">
+                    <div>
+                        <div class="history-drugs">${item.drugs.join(' + ')}</div>
+                        <div class="history-time">${dateStr}, ${timeStr}</div>
+                    </div>
+                    <div style="color: var(--clr-accent); font-weight: 600;">
+                        ${item.warningCount} ${item.warningCount === 1 ? 'interaction' : 'interactions'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function loadFromHistory(idx) {
+        const history = loadHistory();
+        if (history[idx]) {
+            drugList = [...history[idx].drugs];
+            renderDrugList();
+            updateCheckButton();
+            document.querySelector('.drug-input-panel').scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    // Clear all drugs
+    btnClearDrugs.addEventListener('click', () => {
+        if (drugList.length === 0) return;
+        if (confirm('Clear all medications?')) {
+            drugList = [];
+            renderDrugList();
+            updateCheckButton();
+            resultsPanel.classList.remove('active');
+        }
+    });
+
+    // Initialize
+    updateCheckButton();
+    renderHistory();
+    </script>
+</body>
+</html>

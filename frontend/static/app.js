@@ -1,23 +1,23 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const Model = {
-        state: {
-            profile: {
-                age: 25,
-                gender: "0",
-                weight: 70,
-                h_hyper: false,
-                h_diabe: false,
-                h_asthma: false,
-                h_allergy: false,
-                h_surgery: false
-            },
-            notes: "",
-            medications: [],
-            theme: "dark",
-            consent: false,
-            shieldPin: null
+// Declare Model globally so it's accessible from other scripts
+window.Model = window.Model || {
+    state: {
+        profile: {
+            age: 25,
+            gender: "0",
+            weight: 70,
+            h_hyper: false,
+            h_diabe: false,
+            h_asthma: false,
+            h_allergy: false,
+            h_surgery: false
         },
-        load() {
+        notes: "",
+        medications: [],
+        theme: "dark",
+        consent: false,
+        shieldPin: null
+    },
+    load() {
             const savedProfile = JSON.parse(localStorage.getItem("pharmacian_v2_profile") || "null");
             if (savedProfile) {
                 Model.state.profile = {
@@ -49,11 +49,19 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("pharmacian_consent", Model.state.consent ? "true" : "false");
         },
         saveShieldPin(pin) {
-            localStorage.setItem("pharmacian_shield_pin", pin);
-            Model.state.shieldPin = pin;
+            // Store a simple hash so the PIN is not in plaintext
+            let hash = 0;
+            for (let i = 0; i < pin.length; i++) {
+                hash = ((hash << 5) - hash) + pin.charCodeAt(i);
+                hash |= 0;
+            }
+            const hashed = 'ph_' + Math.abs(hash).toString(36);
+            localStorage.setItem("pharmacian_shield_pin", hashed);
+            Model.state.shieldPin = hashed;
         }
     };
 
+document.addEventListener("DOMContentLoaded", () => {
     const View = {
         refs: {},
         chart: null,
@@ -104,6 +112,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 reportNotes: r("report-notes"),
                 reportRisks: r("report-risks"),
                 interactionWarnings: r("interaction-warnings"),
+                interactionWarningsReport: r("interaction-warnings-report"),
+                interactionReportContent: r("interaction-report-content"),
+                checkInteractionsBtn: r("check-interactions-btn"),
                 riskDashboard: r("risk-dashboard"),
                 riskListMain: r("risk-list-main"),
                 rationaleCard: r("technical-analysis-card"),
@@ -287,7 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     barContainer.className = "risk-bar-container";
                     const bar = document.createElement("div");
                     bar.className = "risk-bar";
-                    bar.style.width = r.risk === "High" ? "90%" : "50%";
+                    bar.style.width = r.risk === "High" ? "90%" : r.risk === "Medium" ? "55%" : "30%";
                     barContainer.appendChild(bar);
 
                     const note = document.createElement("p");
@@ -471,9 +482,9 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             const updateProfile = () => {
                 Model.state.profile = {
-                    age: View.refs.pAge.value,
-                    gender: View.refs.pGender.value,
-                    weight: View.refs.pWeight.value,
+                    age: parseInt(View.refs.pAge.value, 10) || 25,
+                    gender: parseInt(View.refs.pGender.value, 10) || 0,
+                    weight: parseInt(View.refs.pWeight.value, 10) || 70,
                     h_hyper: View.refs.hHyper.checked,
                     h_diabe: View.refs.hDiabe.checked,
                     h_asthma: View.refs.hAsthma.checked,
@@ -492,6 +503,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 View.renderNotes(Model.state.notes);
             });
             View.refs.addMed.addEventListener("click", ViewModel.addMedication);
+            View.refs.checkInteractionsBtn.addEventListener("click", ViewModel.checkInteractions);
             View.refs.medDose.addEventListener("input", () => {
                 if (!View.refs.medWarning.classList.contains("hidden")) {
                     View.refs.medWarning.classList.add("hidden");
@@ -521,7 +533,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 View.refs.shieldOverlay.classList.remove("hidden");
                 View.refs.shieldPinInput.focus();
                 View.refs.shieldPinInput.oninput = () => {
-                    if (View.refs.shieldPinInput.value === Model.state.shieldPin) {
+                    const inputPin = View.refs.shieldPinInput.value;
+                    let hash = 0;
+                    for (let i = 0; i < inputPin.length; i++) {
+                        hash = ((hash << 5) - hash) + inputPin.charCodeAt(i);
+                        hash |= 0;
+                    }
+                    const inputHashed = 'ph_' + Math.abs(hash).toString(36);
+                    if (inputHashed === Model.state.shieldPin) {
                         View.refs.shieldOverlay.classList.add("hidden");
                     } else if (View.refs.shieldPinInput.value.length === 4) {
                         View.refs.shieldError.classList.remove("hidden");
@@ -580,20 +599,41 @@ document.addEventListener("DOMContentLoaded", () => {
             Model.saveMeds();
             View.renderMeds(Model.state.medications);
         },
-        buildInteractionWarnings(meds) {
-            const warnings = [];
-            const names = meds.map(m => (m.name || "").toLowerCase());
-            const has = (k) => names.some(n => n.includes(k));
-            if (has("ibuprofen") && has("aspirin")) {
-                warnings.push("Potential duplication: ibuprofen + aspirin may increase bleeding risk. Confirm with a clinician.");
+        async checkInteractions() {
+            const meds = Model.state.medications;
+            if (meds.length < 1) {
+                View.refs.interactionReportContent.innerHTML = "<em>Add medications first to check for interactions.</em>";
+                View.refs.interactionWarningsReport.classList.remove("hidden");
+                return;
             }
-            if (has("warfarin") && (has("aspirin") || has("ibuprofen") || has("naproxen"))) {
-                warnings.push("Potential interaction: warfarin with NSAIDs can increase bleeding risk. Confirm with a clinician.");
+
+            View.refs.interactionReportContent.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Querying OpenFDA database...';
+            View.refs.interactionWarningsReport.classList.remove("hidden");
+
+            try {
+                const res = await fetch("/api/check-interactions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ medications: meds })
+                });
+                const data = await res.json();
+
+                if (data.status === "ok" && data.warnings.length > 0) {
+                    let html = '<ul style="padding-left: 15px; margin: 0;">';
+                    data.warnings.forEach(w => {
+                        const color = w.severity === "Contraindicated" ? "#ff4757" : w.severity === "Major" ? "#ffab40" : "var(--clr-accent)";
+                        html += `<li style="margin-bottom: 8px;">
+                            <strong style="color: ${color};">[${w.severity}]</strong> ${w.note}
+                        </li>`;
+                    });
+                    html += '</ul>';
+                    View.refs.interactionReportContent.innerHTML = html;
+                } else {
+                    View.refs.interactionReportContent.innerHTML = '<span style="color: #00e676;"><i class="fas fa-check-circle"></i> No major clinical interactions detected in FDA records for this combination.</span>';
+                }
+            } catch (e) {
+                View.refs.interactionReportContent.innerHTML = '<span style="color: #ff4757;">Failed to reach FDA interaction service.</span>';
             }
-            if (has("paracetamol") && has("acetaminophen")) {
-                warnings.push("Potential duplication: paracetamol is acetaminophen. Avoid double dosing.");
-            }
-            return warnings;
         },
         async performConsultation(isRefined) {
             const symptoms = View.refs.symptoms.value.trim();
@@ -609,9 +649,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const payload = {
                 symptoms,
                 duration: View.refs.duration.value,
-                age: Model.state.profile.age,
-                gender: Model.state.profile.gender,
-                weight: Model.state.profile.weight,
+                age: parseInt(Model.state.profile.age, 10) || 25,
+                gender: parseInt(Model.state.profile.gender, 10) || 0,
+                weight: parseInt(Model.state.profile.weight, 10) || 70,
                 h_hyper: Model.state.profile.h_hyper ? 1 : 0,
                 h_diabe: Model.state.profile.h_diabe ? 1 : 0,
                 h_asthma: Model.state.profile.h_asthma ? 1 : 0,
@@ -674,11 +714,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 View.renderProbabilityChart(data.predictions);
                 View.renderRisks(data.risks);
                 View.renderXAI(data.rationale, data.consensus);
-                View.renderResearch(data.research, data.predictions[0].disease);
+                const primaryDisease = (data.predictions && data.predictions.length > 0) ? data.predictions[0].disease : "Unknown Condition";
+                View.renderResearch(data.research, primaryDisease);
                 View.renderMeds(data.medications);
                 View.renderNotes(data.notes);
                 View.renderReport(data);
-                View.renderInteractionWarnings(ViewModel.buildInteractionWarnings(data.medications || []));
 
                 View.hideLoader();
                 View.showResults();

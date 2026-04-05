@@ -1,6 +1,12 @@
+import sys
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+if getattr(sys, 'frozen', False):
+    # Running in a bundled EXE (PyInstaller)
+    BASE_DIR = Path(sys._MEIPASS)
+else:
+    # Running in a normal development environment
+    BASE_DIR = Path(__file__).resolve().parent.parent
 TRAINING_DATA_PATH = BASE_DIR / "backend" / "data" / "disease-prediction" / "Training.csv"
 MODELS_DIR = BASE_DIR / "saved_models"
 RF_MODEL_PATH = MODELS_DIR / "random_forest.joblib"

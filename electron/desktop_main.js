@@ -28,11 +28,25 @@ function pickPythonCommand() {
 }
 
 function startBackend() {
-  const { cmd, args } = pickPythonCommand();
-  const appPath = path.join(__dirname, "..", "backend", "server_entry.py");
+  let cmd, args, cwd;
 
-  backendProcess = spawn(cmd, [...args, appPath], {
-    cwd: path.join(__dirname, "..", "backend"),
+  if (app.isPackaged) {
+    // Production: Use the bundled standalone EXE
+    cmd = path.join(process.resourcesPath, "bin", "pharmacian_engine.exe");
+    args = [];
+    cwd = process.resourcesPath; 
+  } else {
+    // Development: Use system Python
+    const python = pickPythonCommand();
+    cmd = python.cmd;
+    args = [...python.args, path.join(__dirname, "..", "backend", "server_entry.py")];
+    cwd = path.join(__dirname, "..", "backend");
+  }
+
+  console.log(`[Main] Spawning backend: ${cmd} in ${cwd}`);
+  
+  backendProcess = spawn(cmd, args, {
+    cwd: cwd,
     env: {
       ...process.env,
       PHARMACIAN_DESKTOP: "1"

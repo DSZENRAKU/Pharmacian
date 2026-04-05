@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:5000;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Pharmacian Clinical Dashboard - Real-time analytics, risk clustering, and patient diagnostic health tracking for healthcare professionals.">
     <title>Pharmacian | Clinical Analytics Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -85,6 +86,47 @@
         }
         .btn-view:hover { background: var(--clr-accent); color: #fff; }
 
+        /* ── Quick Actions ── */
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .quick-action-card {
+            background: linear-gradient(135deg, var(--clr-card), var(--clr-surface));
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            animation: fadeInUp 0.5s ease-out both;
+        }
+        .quick-action-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0, 210, 255, 0.15);
+            border-color: var(--clr-accent);
+        }
+        .quick-action-icon {
+            font-size: 2rem;
+            color: var(--clr-accent);
+        }
+        .quick-action-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--clr-text-hi);
+        }
+        .quick-action-desc {
+            font-size: 0.75rem;
+            color: var(--clr-text-mid);
+            line-height: 1.4;
+        }
+
         @media (max-width: 1200px) {
             .metrics-grid { grid-template-columns: repeat(2, 1fr); }
             .charts-row { grid-template-columns: 1fr; }
@@ -97,6 +139,7 @@
     <aside class="sidebar">
         <a href="/dashboard" class="nav-link active"><i class="fas fa-grid-2"></i> <span>Dashboard</span></a>
         <a href="/diagnose"  class="nav-link"><i class="fas fa-stethoscope"></i> <span>New Assessment</span></a>
+        <a href="/drug-interactions" class="nav-link"><i class="fas fa-pills"></i> <span>Drug Interactions</span></a>
         <a href="/patients"  class="nav-link"><i class="fas fa-user-group"></i> <span>All Patients</span></a>
         <a href="/reports"   class="nav-link"><i class="fas fa-file-medical"></i> <span>Reports</span></a>
         <a href="/settings"  class="nav-link"><i class="fas fa-cog"></i> <span>Settings</span></a>
@@ -107,12 +150,14 @@
         <!-- Top Navbar -->
         <nav class="top-bar">
             <a href="/dashboard" class="logo">
-                <img src="/static/logo.png" alt="Pharmacian">
-                <span>Pharma<span>cian</span></span>
+                <img src="/static/logo.png" alt="Pharmacian Clinical Platform">
+                <h1 style="font-size: 1.25rem; margin: 0; color: inherit; display: inline-flex; align-items: center; font-weight: inherit;">
+                    Pharma<span>cian</span>
+                </h1>
             </a>
             <div class="user-menu">
                 <div class="user-badge">
-                    <div class="user-avatar" id="nav-user-initials">DC</div>
+                    <div class="user-avatar" id="nav-user-initials" aria-label="User Initials">DC</div>
                     <div>
                         <div class="user-name" id="nav-user-name">Clinician</div>
                         <div class="user-role" id="nav-user-role">Clinical Staff</div>
@@ -126,39 +171,63 @@
             <!-- Metrics Matrix -->
             <div class="metrics-grid">
                 <div class="metric-card" style="animation-delay:0s">
-                    <div class="metric-icon"><i class="fas fa-users"></i></div>
+                    <div class="metric-icon" aria-hidden="true"><i class="fas fa-users"></i></div>
                     <span class="metric-value" id="metric-total-patients">—</span>
                     <span class="metric-label">Total Patients</span>
                 </div>
                 <div class="metric-card" style="animation-delay:0.08s">
-                    <div class="metric-icon"><i class="fas fa-clipboard-check"></i></div>
+                    <div class="metric-icon" aria-hidden="true"><i class="fas fa-clipboard-check"></i></div>
                     <span class="metric-value" id="metric-today">—</span>
                     <span class="metric-label">Assessments Today</span>
                 </div>
                 <div class="metric-card" style="animation-delay:0.16s">
-                    <div class="metric-icon"><i class="fas fa-triangle-exclamation"></i></div>
+                    <div class="metric-icon" aria-hidden="true"><i class="fas fa-triangle-exclamation"></i></div>
                     <span class="metric-value" id="metric-high-risk">—</span>
                     <span class="metric-label">High Risk Cases</span>
                 </div>
                 <div class="metric-card" style="animation-delay:0.24s">
-                    <div class="metric-icon"><i class="fas fa-brain"></i></div>
+                    <div class="metric-icon" aria-hidden="true"><i class="fas fa-brain"></i></div>
                     <span class="metric-value" id="metric-accuracy">94.2%</span>
                     <span class="metric-label">Model Accuracy</span>
                 </div>
             </div>
 
+            <!-- Quick Actions -->
+            <div class="quick-actions-grid">
+                <a href="/diagnose" class="quick-action-card" style="animation-delay:0.25s">
+                    <div class="quick-action-icon"><i class="fas fa-stethoscope"></i></div>
+                    <div class="quick-action-title">New Assessment</div>
+                    <div class="quick-action-desc">Perform clinical diagnosis with AI assistance</div>
+                </a>
+                <a href="/drug-interactions" class="quick-action-card" style="animation-delay:0.3s">
+                    <div class="quick-action-icon"><i class="fas fa-shield-virus"></i></div>
+                    <div class="quick-action-title">Drug Interactions</div>
+                    <div class="quick-action-desc">Check FDA-backed medication interactions</div>
+                </a>
+                <a href="/patients" class="quick-action-card" style="animation-delay:0.35s">
+                    <div class="quick-action-icon"><i class="fas fa-users"></i></div>
+                    <div class="quick-action-title">View Patients</div>
+                    <div class="quick-action-desc">Browse and manage patient records</div>
+                </a>
+                <a href="/reports" class="quick-action-card" style="animation-delay:0.4s">
+                    <div class="quick-action-icon"><i class="fas fa-file-medical"></i></div>
+                    <div class="quick-action-title">Reports</div>
+                    <div class="quick-action-desc">View clinical analytics and insights</div>
+                </a>
+            </div>
+
             <!-- Charts -->
             <div class="charts-row">
                 <div class="chart-card">
-                    <h3><i class="fas fa-chart-bar" style="color:var(--clr-accent);margin-right:8px"></i>Weekly Assessment Trend</h3>
+                    <h3><i class="fas fa-chart-bar" style="color:var(--clr-accent);margin-right:8px" aria-hidden="true"></i>Weekly Assessment Trend</h3>
                     <div style="position:relative; height:280px">
-                        <canvas id="weeklyBarChart"></canvas>
+                        <canvas id="weeklyBarChart" aria-label="Weekly Assessment Trend Chart"></canvas>
                     </div>
                 </div>
                 <div class="chart-card">
-                    <h3><i class="fas fa-chart-pie" style="color:var(--clr-accent);margin-right:8px"></i>Disease Risk Clustering</h3>
+                    <h3><i class="fas fa-chart-pie" style="color:var(--clr-accent);margin-right:8px" aria-hidden="true"></i>Disease Risk Clustering</h3>
                     <div style="position:relative; height:280px">
-                        <canvas id="riskDonutChart"></canvas>
+                        <canvas id="riskDonutChart" aria-label="Disease Risk Distribution Chart"></canvas>
                     </div>
                 </div>
             </div>
@@ -189,6 +258,50 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Drug Interaction Quick Check -->
+            <div class="table-card" style="margin-top: 32px;">
+                <div class="table-card-header">
+                    <h3><i class="fas fa-pills" style="color:#ff6b9d; margin-right:8px"></i>Quick Drug Interaction Check</h3>
+                    <a href="/drug-interactions" class="btn-primary" style="font-size:0.8rem; padding:8px 16px; text-decoration:none;">
+                        <i class="fas fa-arrow-right"></i> Full Checker
+                    </a>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div>
+                        <label style="font-size:0.85rem; font-weight:600; color:var(--clr-text-mid); display:block; margin-bottom:6px;">Add Medications</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="dashboard-med-input" placeholder="Enter medication name..." 
+                                style="flex:1; background:var(--clr-bg); border:1px solid var(--clr-border); 
+                                border-radius:8px; padding:10px 12px; color:var(--clr-text-hi); outline:none;">
+                            <button id="dashboard-add-med-btn" onclick="addDashboardMedication()"
+                                style="background:var(--clr-accent); border:none; color:white; padding:10px 16px; 
+                                border-radius:8px; cursor:pointer; font-weight:600; transition:var(--transition);"
+                                onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-size:0.85rem; font-weight:600; color:var(--clr-text-mid); display:block; margin-bottom:6px;">Selected Medications</label>
+                        <div id="dashboard-med-list" style="background:var(--clr-bg); border:1px solid var(--clr-border); 
+                            border-radius:8px; padding:10px 12px; min-height:40px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; color:var(--clr-text-mid);">
+                            <span style="font-size:0.85rem;">None selected</span>
+                        </div>
+                    </div>
+                </div>
+                <button id="dashboard-check-interaction-btn" onclick="checkDashboardInteractions()" 
+                    style="width:100%; background:linear-gradient(135deg,#ff6b9d,#ff1493); border:none; 
+                    color:white; padding:12px; border-radius:8px; cursor:pointer; font-weight:600; 
+                    font-size:0.95rem; transition:var(--transition);"
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 16px rgba(255,107,157,0.35)'" 
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                    <i class="fas fa-search"></i> Check Interactions
+                </button>
+                <div id="dashboard-interaction-results" style="margin-top:16px; display:none;">
+                    <div id="dashboard-results-content"></div>
+                </div>
+            </div>
         </div>
 
         <!-- AI Chatbot HTML -->
@@ -199,7 +312,7 @@
             border: none; cursor: pointer; font-size: 1.4rem;
             box-shadow: 0 4px 20px rgba(0,102,255,0.4);
             transition: transform 0.2s ease;
-        " title="AI Clinical Assistant">
+        " title="AI Clinical Assistant" aria-label="Open AI Clinical Assistant">
             🤖
         </button>
 
@@ -255,7 +368,19 @@
                 document.getElementById('metric-total-patients').textContent = stats.totalPatients || 0;
                 document.getElementById('metric-high-risk').textContent = stats.highRiskCount || 0;
                 document.getElementById('metric-today').textContent = stats.todayAssessments || 0;
-                document.getElementById('metric-accuracy').textContent = '100.0%';
+                const feedbackRes = await fetch('/api/feedback-stats').catch(() => null);
+                if (feedbackRes && feedbackRes.ok) {
+                    const fbData = await feedbackRes.json();
+                    const topAccurate = fbData.top_accurate || [];
+                    if (topAccurate.length > 0) {
+                        const avg = topAccurate.reduce((s, d) => s + d.accuracy, 0) / topAccurate.length;
+                        document.getElementById('metric-accuracy').textContent = avg.toFixed(1) + '%';
+                    } else {
+                        document.getElementById('metric-accuracy').textContent = 'N/A';
+                    }
+                } else {
+                    document.getElementById('metric-accuracy').textContent = 'N/A';
+                }
                 renderRecentTable(stats.recentPatients);
                 
                 // Render the previously missing donut chart
@@ -460,6 +585,109 @@
         function toggleChat() {
             const panel = document.getElementById('ai-chat-panel');
             panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        // Dashboard Drug Interaction Functions
+        let dashboardMedications = [];
+
+        function addDashboardMedication() {
+            const input = document.getElementById('dashboard-med-input');
+            const med = input.value.trim();
+            if (!med) {
+                alert('Please enter a medication name');
+                return;
+            }
+            if (dashboardMedications.includes(med)) {
+                alert('This medication is already added');
+                return;
+            }
+            dashboardMedications.push(med);
+            input.value = '';
+            updateDashboardMedicationDisplay();
+        }
+
+        function removeDashboardMedication(med) {
+            dashboardMedications = dashboardMedications.filter(m => m !== med);
+            updateDashboardMedicationDisplay();
+        }
+
+        function updateDashboardMedicationDisplay() {
+            const list = document.getElementById('dashboard-med-list');
+            if (dashboardMedications.length === 0) {
+                list.innerHTML = '<span style="font-size:0.85rem;">None selected</span>';
+            } else {
+                list.innerHTML = dashboardMedications.map(med => `
+                    <div style="background:var(--clr-accent); color:white; padding:6px 12px; border-radius:6px; 
+                        display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:500;">
+                        ${med}
+                        <button onclick="removeDashboardMedication('${med.replace(/'/g, "\\'")}')" 
+                            style="background:transparent; border:none; color:white; cursor:pointer; font-size:1rem; padding:0;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function checkDashboardInteractions() {
+            if (dashboardMedications.length < 2) {
+                alert('Please add at least 2 medications to check interactions');
+                return;
+            }
+
+            const btn = document.getElementById('dashboard-check-interaction-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+
+            try {
+                const response = await fetch('/api/check-interactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ medications: dashboardMedications })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    const resultsDiv = document.getElementById('dashboard-interaction-results');
+                    const contentDiv = document.getElementById('dashboard-results-content');
+                    
+                    if (data.interactions && data.interactions.length > 0) {
+                        contentDiv.innerHTML = data.interactions.map(interaction => {
+                            const severityClass = (interaction.severity || 'unknown').toLowerCase();
+                            const severityColor = {
+                                'contraindicated': '#ff1744',
+                                'major': '#ff6f00',
+                                'moderate': '#fdd835',
+                                'minor': '#43a047'
+                            }[severityClass] || '#666';
+
+                            return `
+                                <div style="padding:12px; border-left:4px solid ${severityColor}; 
+                                    background:rgba(${severityColor},0.1); margin-bottom:8px; border-radius:4px;">
+                                    <div style="font-weight:600; color:${severityColor}; margin-bottom:4px;">
+                                        ${interaction.severity || 'Unknown Severity'}: ${interaction.drug1} + ${interaction.drug2}
+                                    </div>
+                                    <div style="font-size:0.85rem; color:var(--clr-text-mid); line-height:1.5;">
+                                        ${interaction.description || 'Interaction detected'}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        contentDiv.innerHTML = '<div style="padding:12px; background:rgba(67,160,71,0.1); border-radius:4px; color:#43a047; text-align:center;">✓ No significant interactions detected</div>';
+                    }
+                    resultsDiv.style.display = 'block';
+                } else {
+                    alert('Error checking interactions: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error('Interaction check error:', err);
+                alert('Failed to check interactions. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search"></i> Check Interactions';
+            }
         }
     </script>
 </body>

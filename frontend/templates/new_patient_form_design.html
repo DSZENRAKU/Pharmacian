@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:5000;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="New Patient Clinical Assessment - Intelligent diagnostic intake form for Pharmacian. Features real-time symptom detection and drug interaction safety checks.">
     <title>Pharmacian | New Clinical Assessment</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -114,6 +115,7 @@
     <aside class="sidebar">
         <a href="/dashboard" class="nav-link"><i class="fas fa-grid-2"></i> <span>Dashboard</span></a>
         <a href="/diagnose"  class="nav-link active"><i class="fas fa-stethoscope"></i> <span>New Assessment</span></a>
+        <a href="/drug-interactions" class="nav-link"><i class="fas fa-pills"></i> <span>Drug Interactions</span></a>
         <a href="/patients"  class="nav-link"><i class="fas fa-user-group"></i> <span>All Patients</span></a>
         <a href="/reports"   class="nav-link"><i class="fas fa-file-medical"></i> <span>Reports</span></a>
         <a href="/settings"  class="nav-link"><i class="fas fa-cog"></i> <span>Settings</span></a>
@@ -122,8 +124,10 @@
     <main class="main-content">
         <nav class="top-bar">
             <a href="/dashboard" class="logo">
-                <img src="/static/logo.png" alt="Pharmacian">
-                <span>Pharma<span>cian</span></span>
+                <img src="/static/logo.png" alt="Pharmacian Clinical Platform">
+                <h1 style="font-size: 1.25rem; margin: 0; color: inherit; display: inline-flex; align-items: center; font-weight: inherit;">
+                    Pharma<span>cian</span>
+                </h1>
             </a>
             <div class="user-menu">
                 <div class="user-badge">
@@ -140,10 +144,10 @@
         <div class="content-area">
             <div class="form-layout">
                 <div class="scroll-spy">
-                    <ul class="step-list">
-                        <li class="step active" onclick="scrollToSec('sec-1')"><div class="step-circle">1</div><span>Patient Profile</span></li>
-                        <li class="step" onclick="scrollToSec('sec-2')"><div class="step-circle">2</div><span>Clinical Vitals</span></li>
-                        <li class="step" onclick="scrollToSec('sec-3')"><div class="step-circle">3</div><span>Symptom Profile</span></li>
+                    <ul class="step-list" role="navigation" aria-label="Assessment Progress">
+                        <li class="step active" role="button" tabindex="0" onclick="scrollToSec('sec-1')" aria-label="Step 1: Patient Profile"><div class="step-circle">1</div><span>Patient Profile</span></li>
+                        <li class="step" role="button" tabindex="0" onclick="scrollToSec('sec-2')" aria-label="Step 2: Clinical Vitals"><div class="step-circle">2</div><span>Clinical Vitals</span></li>
+                        <li class="step" role="button" tabindex="0" onclick="scrollToSec('sec-3')" aria-label="Step 3: Symptom Profile"><div class="step-circle">3</div><span>Symptom Profile</span></li>
                     </ul>
                 </div>
 
@@ -152,16 +156,16 @@
                         <div class="section-header"><h2><i class="fas fa-user"></i> Patient Profile</h2></div>
                         <div class="input-grid">
                             <div class="form-group full-width">
-                                <label><i class="fas fa-user"></i> Patient Name</label>
+                                <label for="patient-name"><i class="fas fa-user" aria-hidden="true"></i> Patient Name</label>
                                 <input type="text" id="patient-name" placeholder="Enter patient's full name (optional)" class="form-control">
                             </div>
                             <div class="form-group">
-                                <label><i class="fas fa-calendar-alt"></i> Age *</label>
-                                <input type="number" id="age" class="form-control" placeholder="Years" min="1" max="120">
+                                <label for="age"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Age *</label>
+                                <input type="number" id="age" class="form-control" placeholder="Years" min="1" max="120" required>
                                 <span class="error-msg">Valid age is required</span>
                             </div>
                             <div class="form-group">
-                                <label><i class="fas fa-droplet"></i> Blood Group</label>
+                                <label for="blood-group"><i class="fas fa-droplet" aria-hidden="true"></i> Blood Group</label>
                                 <select id="blood-group" class="form-control">
                                     <option value="">Unknown</option>
                                     <option value="A+">A+</option><option value="A-">A-</option>
@@ -228,6 +232,7 @@
                             </div>
                         </div>
                     </div>
+194: 
 
                     <div class="form-section" id="sec-3">
                         <div class="section-header"><h2><i class="fas fa-clipboard-list"></i> Symptom Profiling</h2></div>
@@ -304,7 +309,9 @@
         </div>
     </div>
     
+    <script src="/static/app.js"></script>
     <script src="/static/nav.js"></script>
+    <script>
     <script>
         // --- Diagnostic State Management ---
         let CURRENT_ASSESSMENT_CONTEXT = null;
@@ -628,7 +635,7 @@
                     h_asthma: 0,
                     h_allergy: 0,
                     h_surgery: document.getElementById('hist-surgery').checked ? 1 : 0,
-                    medications: [],
+                    medications: Model.state.medications || [],
                     notes: "",
                     is_refined: false
                 })
