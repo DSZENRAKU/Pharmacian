@@ -227,8 +227,29 @@
         });
 
         async function loadPatients(searchQuery = '') {
-            const patients = await DB.getPatients({ search: searchQuery });
-            renderPatientTable(patients);
+            // Electron IPC path
+            let patients = await DB.getPatients({ search: searchQuery });
+
+            // Web / browser fallback — call the Flask REST API
+            if (!patients || patients.length === 0) {
+                try {
+                    const res = await fetch('/api/patients');
+                    if (res.ok) {
+                        const data = await res.json();
+                        let allPatients = data.patients || [];
+                        if (searchQuery) {
+                            const q = searchQuery.toLowerCase();
+                            allPatients = allPatients.filter(p =>
+                                (p.full_name || '').toLowerCase().includes(q) ||
+                                (p.patient_code || '').toLowerCase().includes(q)
+                            );
+                        }
+                        patients = allPatients;
+                    }
+                } catch (_) {}
+            }
+
+            renderPatientTable(patients || []);
         }
 
         function renderPatientTable(patients) {
@@ -239,7 +260,7 @@
             if(countTotal) countTotal.innerText = patients.length;
 
             if (!patients.length) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--clr-text-mid);padding:40px"><div class="empty-state"><p>No patients found</p></div></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--clr-text-mid);padding:40px"><div class="empty-state"><i class="fas fa-users" style="font-size:2.5rem;margin-bottom:12px;color:var(--clr-border)"></i><p>No patients found. Start by creating a new assessment.</p></div></td></tr>';
                 return;
             }
             tbody.innerHTML = patients.map(p => {
@@ -251,14 +272,14 @@
                     <td>
                         <div class="patient-cell">
                             <div class="avatar">${p.full_name ? p.full_name.substring(0,2).toUpperCase() : 'NA'}</div>
-                            <strong>${p.full_name || p.name}</strong>
+                            <strong>${p.full_name || p.name || '—'}</strong>
                         </div>
                     </td>
-                    <td>${p.age} / ${p.gender}</td>
+                    <td>${p.age} / ${p.gender || '—'}</td>
                     <td>${(p.last_scan || p.created_at) ? new Date(p.last_scan || p.created_at).toLocaleDateString() : '—'}</td>
                     <td>${p.primary_disease || '—'}</td>
                     <td><span class="badge ${riskCls}">${riskLevel}</span></td>
-                    <td style="text-align:right">
+                    <td style="text-align:right; display:flex; gap:6px; justify-content:flex-end;">
                         <button onclick="viewPatient(${p.id})" class="action-icon" title="View Patient"><i class="fas fa-eye"></i></button>
                         <button onclick="deletePatient(${p.id})" class="action-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
                     </td>
@@ -284,35 +305,29 @@
 
         window.deletePatient = async function(id) {
             if (!confirm('Are you sure? This will soft-delete the patient record.')) return;
-            const isElectron = window.electronAPI !== undefined || window.pharmacianDB !== undefined;
-            let result;
+            const isElectron = window.pharmacianDB !== undefined;
             if (isElectron) {
-                if (window.electronAPI && window.electronAPI.invoke) {
-                    result = await window.electronAPI.invoke('db:deletePatient', id);
-                } else if (window.pharmacianDB && window.pharmacianDB.deletePatient) {
-                    result = await window.pharmacianDB.deletePatient(id);
-                }
-                
-                if (result && (result === true || result.ok !== false)) {
+                const result = await window.pharmacianDB.deletePatient(id);
+                if (result && result.ok !== false) {
                     await loadPatients();
                 } else {
-                    alert('Failed to delete: ' + (result ? result.error : ''));
+                    alert('Failed to delete: ' + (result ? result.error : 'Unknown error'));
                 }
+            } else {
+                alert('Patient deletion is only available in the desktop application.');
             }
-        }
+        };
         
         window.viewPatient = async function(id) {
-            if (!window.pharmacianDB && !window.electronAPI) return;
-            let res;
             if (window.pharmacianDB) {
-                res = await window.pharmacianDB.getPredictionHistory(id);
+                const res = await window.pharmacianDB.getPredictionHistory(id);
+                if (res && res.ok && res.data && res.data.length > 0) {
+                    window.location.href = '/result';
+                } else {
+                    alert('No assessment records found for this patient.');
+                }
             } else {
-                res = await window.electronAPI.invoke('db:getPredictionHistory', id);
-            }
-            if (res && res.ok && res.data && res.data.length > 0) {
-                window.location.href = '/result';
-            } else {
-                alert('No assessment records found for this patient.');
+                alert('Detailed patient view is available in the desktop application.');
             }
         };
     </script>

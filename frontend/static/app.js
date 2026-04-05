@@ -62,11 +62,23 @@ window.Model = window.Model || {
     };
 
 document.addEventListener("DOMContentLoaded", () => {
+    // This bundle powers the legacy/full diagnostic UI. If the required
+    // elements aren't present (e.g., modern diagnose page), only load Model.
+    const hasLegacyUI =
+        document.getElementById("predict-btn") &&
+        document.getElementById("symptoms") &&
+        document.getElementById("theme-btn");
+    if (!hasLegacyUI) {
+        Model.load();
+        return;
+    }
+
     const View = {
         refs: {},
         chart: null,
         init() {
             const r = (id) => document.getElementById(id);
+            const themeBtn = r("theme-btn");
             View.refs = {
                 symptoms: r("symptoms"),
                 duration: r("duration"),
@@ -82,8 +94,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 optionButtons: r("option-buttons"),
                 skipBtn: r("skip-questions"),
                 errorBanner: r("error-banner"),
-                themeBtn: r("theme-btn"),
-                themeIcon: r("theme-btn").querySelector("i"),
+                themeBtn: themeBtn,
+                themeIcon: themeBtn ? themeBtn.querySelector("i") : null,
                 consentGuard: r("consent-guard"),
                 consentCheck: r("consent-check"),
                 consentBtn: r("consent-btn"),

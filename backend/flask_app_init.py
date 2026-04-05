@@ -44,19 +44,37 @@ def create_app():
         models_loaded = bool(state.random_forest and state.decision_tree and state.naive_bayes)
         return jsonify({"ok": True, "models_loaded": models_loaded, "artifact_files": files})
     
+    @app.route("/favicon.ico")
+    def favicon():
+        static_dir = app.static_folder
+        ico_path = os.path.join(static_dir, "favicon.ico")
+        png_path = os.path.join(static_dir, "logo.png")
+        if os.path.exists(ico_path):
+            from flask import send_from_directory
+            return send_from_directory(static_dir, "favicon.ico", mimetype="image/x-icon")
+        if os.path.exists(png_path):
+            from flask import send_from_directory
+            return send_from_directory(static_dir, "logo.png", mimetype="image/png")
+        from flask import Response
+        return Response(status=204)  # No Content – browser stops asking
+
     app.register_blueprint(bp)
 
     @app.errorhandler(Exception)
     def handle_exception(e):
         logging.exception(f"Unhandled error on {request.path}")
-        # For API routes return JSON, for page routes raise normally
-        if request.path.startswith("/predict") or request.path.startswith("/feedback") or request.path.startswith("/retrain"):
+        if request.path.startswith("/api") or request.path.startswith("/predict") or \
+           request.path.startswith("/feedback") or request.path.startswith("/retrain"):
             return jsonify({"error": "Internal server error. Please try again."}), 500
         raise e
 
     @app.errorhandler(404)
     def not_found(e):
-        return jsonify({"error": "Route not found"}), 404
+        if request.path.startswith("/api") or request.accept_mimetypes.accept_json:
+            return jsonify({"error": "Route not found"}), 404
+        # For page navigation, redirect to dashboard
+        from flask import redirect
+        return redirect("/dashboard"), 302
 
     @app.errorhandler(405)
     def method_not_allowed(e):

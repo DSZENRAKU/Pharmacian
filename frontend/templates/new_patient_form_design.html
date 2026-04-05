@@ -304,14 +304,13 @@
             <div id="question-list"></div>
             <div class="modal-actions">
                 <button type="button" class="btn-outline" onclick="closeRefinement()">Cancel</button>
-                <button type="button" class="btn-primary" onclick="submitRefinement()">Submit & Finalize</button>
+                <button type="button" id="btn-refine-submit" class="btn-primary" onclick="submitRefinement()">Submit & Finalize</button>
             </div>
         </div>
     </div>
     
     <script src="/static/app.js"></script>
     <script src="/static/nav.js"></script>
-    <script>
     <script>
         // --- Diagnostic State Management ---
         let CURRENT_ASSESSMENT_CONTEXT = null;
@@ -321,23 +320,27 @@
          */
         async function finalizeAssessment(patientId, patientData, vitalData, aiResult, activeSymptoms) {
             if (patientId) {
-                const primaryDisease = aiResult.predictions[0]?.disease || "Unknown";
-                const pScore = aiResult.predictions[0]?.probability || 0;
-                const riskLevel = pScore >= 70 ? 'High' : pScore >= 30 ? 'Medium' : 'Low';
+                try {
+                    const primaryDisease = aiResult.predictions[0]?.disease || "Unknown";
+                    const pScore = aiResult.predictions[0]?.probability || 0;
+                    const riskLevel = pScore >= 70 ? 'High' : pScore >= 30 ? 'Medium' : 'Low';
 
-                await DB.insertPrediction(patientId, {
-                    risk_level: riskLevel,
-                    primary_disease: primaryDisease,
-                    confidence: pScore,
-                    raw_payload: aiResult,
-                    bmi: vitalData.bmi,
-                    blood_pressure: (vitalData.bp_sys && vitalData.bp_dia)
-                        ? `${vitalData.bp_sys}/${vitalData.bp_dia}`
-                        : null,
-                    blood_sugar: vitalData.blood_sugar,
-                    heart_rate: vitalData.heart_rate,
-                    symptoms: activeSymptoms.map(s => ({ name: s }))
-                });
+                    await DB.insertPrediction(patientId, {
+                        risk_level: riskLevel,
+                        primary_disease: primaryDisease,
+                        confidence: pScore,
+                        raw_payload: aiResult,
+                        bmi: vitalData.bmi,
+                        blood_pressure: (vitalData.bp_sys && vitalData.bp_dia)
+                            ? `${vitalData.bp_sys}/${vitalData.bp_dia}`
+                            : null,
+                        blood_sugar: vitalData.blood_sugar,
+                        heart_rate: vitalData.heart_rate,
+                        symptoms: activeSymptoms.map(s => ({ name: s }))
+                    });
+                } catch (dbErr) {
+                    console.warn("DB insert failed, continuing to report view:", dbErr);
+                }
             }
 
             sessionStorage.setItem('latestAssessment', JSON.stringify({
@@ -358,7 +361,7 @@
             const context = CURRENT_ASSESSMENT_CONTEXT;
 
             try {
-                const btn = event?.target;
+                const btn = document.getElementById('btn-refine-submit');
                 if (btn) {
                     btn.disabled = true;
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizing Precise Profile...';
@@ -388,11 +391,26 @@
                     })
                 });
 
-                if (!response.ok) throw new Error("AI refinement hub unreachable");
-                const aiResult = await response.json();
+                const raw = await response.text();
+                let aiResult = null;
+                try { aiResult = JSON.parse(raw); } catch (_) {
+                    throw new Error("Backend returned non-JSON response. Please check server logs.");
+                }
+
+                if (!response.ok) throw new Error(aiResult?.error || "AI refinement hub unreachable");
 
                 if (aiResult.status === 'success') {
-                    await finalizeAssessment(context.patientId, context.patientData, context.vitalData, aiResult, context.activeSymptoms);
+                    try {
+                        await finalizeAssessment(context.patientId, context.patientData, context.vitalData, aiResult, context.activeSymptoms);
+                    } catch (_) {
+                        // Fallback: ensure report still opens even if persistence fails
+                        sessionStorage.setItem('latestAssessment', JSON.stringify({
+                            patient: context.patientData,
+                            vitals: context.vitalData,
+                            result: aiResult
+                        }));
+                        window.location.href = '/result';
+                    }
                 } else {
                     // Fallback to simple result view if still ambiguous
                     window.location.href = '/result';
@@ -481,6 +499,10 @@
             const ageVal = document.getElementById('age').value || 25;
             const genderEl = document.querySelector('input[name="gender"]:checked');
             const genderVal = genderEl ? (genderEl.value === 'Male' ? 0 : 1) : 0;
+
+            const meds = (window.Model && Model.state && Array.isArray(Model.state.medications))
+                ? Model.state.medications
+                : [];
 
             const response = await fetch('/predict', {
                 method: 'POST',
@@ -622,6 +644,11 @@
                 patientId = pResult.id;
             }
 
+            // Collect medications from Model state (or empty array in web mode)
+            const meds = (window.Model && Model.state && Array.isArray(Model.state.medications))
+                ? Model.state.medications
+                : [];
+
             const response = await fetch('/predict', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -635,15 +662,21 @@
                     h_asthma: 0,
                     h_allergy: 0,
                     h_surgery: document.getElementById('hist-surgery').checked ? 1 : 0,
-                    medications: Model.state.medications || [],
+                    medications: meds,
                     notes: "",
                     is_refined: false
                 })
             });
 
-            if (!response.ok) throw new Error("AI Engine unreachable");
+            const raw = await response.text();
+            let aiResult = null;
+            try { aiResult = JSON.parse(raw); } catch (_) {
+                throw new Error("Backend returned non-JSON response. Please check server logs.");
+            }
 
-            const aiResult = await response.json();
+            if (!response.ok) {
+                throw new Error(aiResult?.error || "AI Engine unreachable");
+            }
 
             if (aiResult.status === 'success') {
                 await finalizeAssessment(patientId, patientData, vitalData, aiResult, activeSymptoms);
@@ -805,10 +838,18 @@ function hookSymptomMemory() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    renderRecentSymptoms();
-    hookSymptomMemory();
-});
+    document.addEventListener('DOMContentLoaded', () => {
+        renderRecentSymptoms();
+        hookSymptomMemory();
+        // Ensure any leftover refinement modal state doesn't block inputs
+        const modal = document.getElementById('refinement-modal');
+        if (modal) {
+            modal.style.display = "none";
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeRefinement();
+            });
+        }
+    });
 </script>
 </body>
 </html>

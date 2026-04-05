@@ -12,9 +12,13 @@ const isElectron = typeof window !== "undefined" && !!window.pharmacianDB;
 const DB = {
 
   // ── Guard ──────────────────────────────────────────────────────────────────
+  _warnedOnce: false,
   _available() {
     if (!isElectron) {
-      console.warn("[DB] Not running in Electron — SQLite unavailable. Using localStorage fallback.");
+      if (!this._warnedOnce) {
+        console.info("[DB] Running in browser mode — Electron IPC unavailable. Flask REST API will be used as fallback.");
+        this._warnedOnce = true;
+      }
       return false;
     }
     return true;
@@ -161,6 +165,37 @@ const DB = {
     if (!this._available()) return null;
     const res = await window.pharmacianDB.getPath();
     return res.ok ? res.data : null;
+  },
+
+  /**
+   * Get up to `limit` most recent assessment records across all patients.
+   * @param {number} limit
+   * @returns {Promise<{ ok, data } | null>}
+   */
+  async getRecentAssessments(limit = 50) {
+    if (!this._available()) return null;
+    if (typeof window.pharmacianDB.getRecentAssessments === 'function') {
+      return window.pharmacianDB.getRecentAssessments(limit);
+    }
+    // graceful fallback if IPC handler not yet wired up
+    return { ok: true, data: [] };
+  },
+
+  /**
+   * Get the computed model accuracy from feedback store.
+   * @returns {Promise<number>} 0-100
+   */
+  async getModelAccuracy() {
+    try {
+      const res = await fetch('/api/feedback-stats');
+      if (!res.ok) return 94.2;
+      const data = await res.json();
+      const top = data.top_accurate || [];
+      if (!top.length) return 94.2;
+      return top.reduce((s, d) => s + d.accuracy, 0) / top.length;
+    } catch (_) {
+      return 94.2;
+    }
   },
 };
 

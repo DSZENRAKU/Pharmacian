@@ -202,14 +202,25 @@
         let reportData = [];
 
         async function loadReports() {
-            if (!window.pharmacianDB) {
-                renderEmpty('Clinical database unavailable. Please use the Electron app.');
-                return;
-            }
             try {
-                const res = await window.pharmacianDB.getRecentAssessments(50);
-                if (!res.ok) throw new Error(res.error);
-                reportData = res.data || [];
+                let assessments = null;
+
+                if (window.pharmacianDB) {
+                    // Electron path
+                    const res = await window.pharmacianDB.getRecentAssessments(50);
+                    if (res && res.ok) assessments = res.data;
+                }
+
+                if (!assessments) {
+                    // Web / browser fallback
+                    const res = await fetch('/api/reports');
+                    if (res.ok) {
+                        const data = await res.json();
+                        assessments = data.records || [];
+                    }
+                }
+
+                reportData = assessments || [];
                 renderReports(reportData);
                 updateStats(reportData);
             } catch (err) {

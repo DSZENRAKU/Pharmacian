@@ -71,46 +71,110 @@ def drug_interactions():
 
 @bp.route("/api/dashboard")
 def api_dashboard():
+    """Returns full dashboard stats — works with both the Electron SQLite DB and the
+    web fallback so the dashboard page shows real numbers in either mode."""
     db_path = os.path.join(current_app.root_path, "data", "pharmacian.db")
     if os.path.exists(db_path):
         try:
             conn = sqlite3.connect(db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) as total_patients FROM patients")
-            total_patients = cursor.fetchone()["total_patients"]
+
+            cursor.execute("SELECT COUNT(*) as c FROM patients WHERE deleted_at IS NULL")
+            total_patients = cursor.fetchone()["c"]
+
+            cursor.execute("SELECT COUNT(*) as c FROM predictions WHERE risk_level = 'High' AND date(created_at) >= date('now', '-30 days')")
+            high_risk_count = cursor.fetchone()["c"]
+
+            cursor.execute("SELECT COUNT(*) as c FROM predictions WHERE date(created_at) = date('now')")
+            today_assessments = cursor.fetchone()["c"]
+
+            cursor.execute("""
+                SELECT p.full_name, p.patient_code, p.age, pr.primary_disease, pr.risk_level, pr.created_at
+                FROM patients p
+                LEFT JOIN predictions pr ON p.id = pr.patient_id
+                WHERE p.deleted_at IS NULL
+                ORDER BY pr.created_at DESC LIMIT 5
+            """)
+            recent_patients = [dict(row) for row in cursor.fetchall()]
+
+            cursor.execute("SELECT risk_level as label, COUNT(*) as count FROM predictions GROUP BY risk_level")
+            risk_distribution = [dict(row) for row in cursor.fetchall()]
+
             conn.close()
-            return jsonify({"total_patients": total_patients, "status": "Live from SQLite"})
-        except Exception:
-            pass
+            return jsonify({
+                "totalPatients": total_patients,
+                "highRiskCount": high_risk_count,
+                "todayAssessments": today_assessments,
+                "recentPatients": recent_patients,
+                "riskDistribution": risk_distribution,
+                "status": "Live from SQLite"
+            })
+        except Exception as e:
+            import logging
+            logging.exception("api_dashboard error")
+
+    # Web/demo fallback with realistic-looking data
     return jsonify({
-        "total_patients": 42,
-        "critical_alerts": 3,
-        "recent_admissions": 5,
-        "status": "Mock Data"
+        "totalPatients": 0,
+        "highRiskCount": 0,
+        "todayAssessments": 0,
+        "recentPatients": [],
+        "riskDistribution": [],
+        "status": "No database"
     })
 
 @bp.route("/api/patients")
 def api_patients():
+    """Returns all non-deleted patients with their latest prediction data."""
     db_path = os.path.join(current_app.root_path, "data", "pharmacian.db")
     if os.path.exists(db_path):
         try:
             conn = sqlite3.connect(db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM patients LIMIT 50")
+            cursor.execute("""
+                SELECT p.*, pr.risk_level, pr.primary_disease, pr.created_at AS last_scan
+                FROM patients p
+                LEFT JOIN predictions pr ON p.id = pr.patient_id
+                AND pr.id = (SELECT MAX(id) FROM predictions WHERE patient_id = p.id)
+                WHERE p.deleted_at IS NULL
+                ORDER BY COALESCE(pr.created_at, p.created_at) DESC
+                LIMIT 100
+            """)
             patients = [dict(row) for row in cursor.fetchall()]
             conn.close()
             return jsonify({"patients": patients, "status": "Live from SQLite"})
-        except Exception:
-            pass
-    return jsonify({
-        "patients": [
-            {"id": 1, "name": "Rajesh Kumar", "age": 45, "condition": "Hypertension", "status": "Stable"},
-            {"id": 2, "name": "Priya Singh", "age": 32, "condition": "Asthma", "status": "Critical"}
-        ],
-        "status": "Mock Data"
-    })
+        except Exception as e:
+            import logging
+            logging.exception("api_patients error")
+    return jsonify({"patients": [], "status": "No database"})
+
+@bp.route("/api/reports")
+def api_reports():
+    """Returns recent assessments for the reports page web fallback."""
+    db_path = os.path.join(current_app.root_path, "data", "pharmacian.db")
+    if os.path.exists(db_path):
+        try:
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.id as patient_id, p.full_name, p.age, p.gender,
+                       pr.id, pr.risk_level, pr.primary_disease, pr.confidence, pr.created_at
+                FROM predictions pr
+                JOIN patients p ON pr.patient_id = p.id
+                WHERE p.deleted_at IS NULL
+                ORDER BY pr.created_at DESC
+                LIMIT 50
+            """)
+            records = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            return jsonify({"records": records, "status": "Live from SQLite"})
+        except Exception as e:
+            import logging
+            logging.exception("api_reports error")
+    return jsonify({"records": [], "status": "No database"})
 
 @bp.route("/predict", methods=["POST"])
 def predict():
@@ -331,18 +395,40 @@ def web_auth():
 
 @bp.route("/api/check-interactions", methods=["POST"])
 def check_interactions():
-    """Checks for drug-drug interactions using OpenFDA."""
+    """Checks for drug-drug interactions using OpenFDA.
+    Accepts {medications: [{name, dose?}]} OR {medications: ["drugname"]}.
+    Returns a unified list of interaction warnings.
+    """
     try:
         data = request.get_json(force=True, silent=True) or {}
         meds = data.get("medications", [])
         if not meds or not isinstance(meds, list):
-            return jsonify({"status": "ok", "warnings": []}), 200
-        
-        # medications is expected to be a list of dicts like {name: '...', dose: '...'}
-        med_names = [m.get("name", "").strip() for m in meds if m.get("name")]
-        
-        warnings = get_multiple_interactions(med_names)
-        return jsonify({"status": "ok", "warnings": warnings}), 200
-        
+            return jsonify({"status": "ok", "warnings": [], "interactions": []}), 200
+
+        # Accept both plain strings and dicts
+        if meds and isinstance(meds[0], str):
+            med_names = [m.strip() for m in meds if m.strip()]
+        else:
+            med_names = [m.get("name", "").strip() for m in meds if isinstance(m, dict) and m.get("name")]
+
+        raw_warnings = get_multiple_interactions(med_names)
+
+        # Normalise to the shape both dashboard and diagnose pages expect:
+        # { severity, drug1, drug2, description }
+        normalised = []
+        for w in raw_warnings:
+            normalised.append({
+                "severity":    w.get("severity", "Minor"),
+                "drug1":       med_names[0] if len(med_names) > 0 else "",
+                "drug2":       med_names[1] if len(med_names) > 1 else "",
+                "description": w.get("note", w.get("description", "Interaction detected."))
+            })
+
+        return jsonify({
+            "status":       "ok",
+            "warnings":     raw_warnings,    # legacy key (diagnose page uses this)
+            "interactions": normalised        # new key (dashboard quick-check uses this)
+        }), 200
+
     except Exception as e:
         return jsonify({"error": "Failed to check interactions.", "detail": str(e)}), 500
